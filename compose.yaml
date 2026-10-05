@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:17.6-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports: ['127.0.0.1:54322:5432']
+    volumes: [concloud_db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  redis:
+    image: redis:7.4.2-alpine
+    ports: ['127.0.0.1:6387:6379']
+    command: redis-server --appendonly yes
+    volumes: [concloud_redis:/data]
+volumes:
+  concloud_db:
+  concloud_redis:

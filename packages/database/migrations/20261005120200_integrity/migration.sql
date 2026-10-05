@@ -1,0 +1,27 @@
+DROP POLICY insert_rows ON concloud."AccountingPeriod";
+DROP POLICY update_rows ON concloud."AccountingPeriod";
+CREATE POLICY insert_rows ON concloud."AccountingPeriod" FOR INSERT TO concloud_runtime WITH CHECK(concloud.staff_access("organizationId","companyId"));
+CREATE POLICY update_rows ON concloud."AccountingPeriod" FOR UPDATE TO concloud_runtime USING(concloud.staff_access("organizationId","companyId")) WITH CHECK(concloud.staff_access("organizationId","companyId"));
+DROP POLICY insert_rows ON concloud."AuditEvent";
+CREATE POLICY insert_rows ON concloud."AuditEvent" FOR INSERT TO concloud_runtime WITH CHECK(concloud.company_access("organizationId","companyId") AND "actorId"=concloud.actor());
+DROP POLICY insert_rows ON concloud."Document";
+DROP POLICY update_rows ON concloud."Document";
+CREATE POLICY insert_rows ON concloud."Document" FOR INSERT TO concloud_runtime WITH CHECK(concloud.company_access("organizationId","companyId") AND "uploadedBy"=concloud.actor() AND visibility='INTERNAL' AND (classification IN ('INPUT','PROOF') OR concloud.staff_access("organizationId","companyId")));
+CREATE POLICY update_rows ON concloud."Document" FOR UPDATE TO concloud_runtime USING(concloud.staff_access("organizationId","companyId") OR ("uploadedBy"=concloud.actor() AND visibility='INTERNAL')) WITH CHECK(concloud.staff_access("organizationId","companyId") OR ("uploadedBy"=concloud.actor() AND visibility='INTERNAL' AND classification IN ('INPUT','PROOF')));
+DROP POLICY insert_rows ON concloud."DocumentVersion";
+CREATE POLICY insert_rows ON concloud."DocumentVersion" FOR INSERT TO concloud_runtime WITH CHECK(concloud.company_access("organizationId","companyId") AND EXISTS(SELECT 1 FROM concloud."Document" d WHERE d.id="DocumentVersion"."documentId" AND (concloud.staff_access(d."organizationId",d."companyId") OR (d."uploadedBy"=concloud.actor() AND d.visibility='INTERNAL'))));
+DROP POLICY read_rows ON concloud."TaxGuide";
+CREATE POLICY read_rows ON concloud."TaxGuide" FOR SELECT TO concloud_runtime USING(concloud.company_access("organizationId","companyId") AND ("publishedAt" IS NOT NULL OR concloud.staff_access("organizationId","companyId")));
+DROP POLICY insert_rows ON concloud."Review";
+CREATE POLICY insert_rows ON concloud."Review" FOR INSERT TO concloud_runtime WITH CHECK(concloud.staff_access("organizationId","companyId") AND "reviewerId"=concloud.actor() AND EXISTS(SELECT 1 FROM concloud."AccountingPeriod" p JOIN concloud."ExportBatch" b ON b."periodId"=p.id WHERE p.id="Review"."periodId" AND b.id="Review"."exportBatchId" AND p."reviewerId"=concloud.actor() AND p."responsibleId"<>concloud.actor() AND p.state='QUALITY_REVIEW' AND p.revision=b.revision));
+CREATE FUNCTION concloud.preserve_export_snapshot() RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$ BEGIN
+ IF OLD.snapshot IS DISTINCT FROM NEW.snapshot OR OLD.revision<>NEW.revision OR OLD.version<>NEW.version OR OLD."periodId"<>NEW."periodId" OR OLD."companyId"<>NEW."companyId" OR OLD."organizationId"<>NEW."organizationId" THEN RAISE EXCEPTION 'Export snapshot is immutable'; END IF;
+ IF OLD.status='READY' AND (OLD.manifest IS DISTINCT FROM NEW.manifest OR OLD."objectKey" IS DISTINCT FROM NEW."objectKey" OR NEW.status<>'READY') THEN RAISE EXCEPTION 'Completed export is immutable'; END IF;
+ RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION concloud.preserve_export_snapshot() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION concloud.preserve_export_snapshot() TO concloud_runtime;
+CREATE TRIGGER export_immutable BEFORE UPDATE ON concloud."ExportBatch" FOR EACH ROW EXECUTE FUNCTION concloud.preserve_export_snapshot();
+ALTER TABLE concloud."RecurrenceRule" ADD CONSTRAINT recurrence_valid CHECK(amount>0 AND day BETWEEN 1 AND 28 AND "startMonth" ~ '^\d{4}-(0[1-9]|1[0-2])$' AND ("endMonth" IS NULL OR "endMonth">="startMonth"));
+ALTER TABLE concloud."Document" ADD CONSTRAINT document_classification CHECK(classification IN ('INPUT','RESULT','GUIDE','PROOF','RECEIPT'));
+ALTER TABLE concloud."ExportBatch" ADD CONSTRAINT export_status CHECK(status IN ('PENDING','READY'));

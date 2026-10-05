@@ -1,0 +1,809 @@
+generator client {
+ provider = "prisma-client"
+ output = "./generated"
+}
+datasource db {
+ provider = "postgresql"
+ schemas = ["concloud"]
+}
+enum Role {
+ SUPER_ADMIN
+ ORG_ADMIN
+ ACCOUNTANT
+ ASSISTANT
+ CLIENT_OWNER
+ CLIENT_MEMBER
+ @@schema("concloud")
+}
+enum ClosingState {
+ AWAITING_INFORMATION
+ UNDER_REVIEW
+ READY_FOR_PROCESSING
+ PROCESSING_EXTERNALLY
+ QUALITY_REVIEW
+ DELIVERED
+ CLOSED
+ @@schema("concloud")
+}
+
+model Profile {
+ id String @id @db.Uuid
+ email String @unique
+ name String
+ createdAt DateTime @default(now())
+ relatedOrganizationMembership42 OrganizationMembership[] @relation("R42")
+ relatedCompanyMembership44 CompanyMembership[] @relation("R44")
+ @@schema("concloud")
+}
+
+model Organization {
+ id String @id @default(uuid()) @db.Uuid
+ name String
+ retentionDays Int @default(1825)
+ createdAt DateTime @default(now())
+ relatedOrganizationMembership41 OrganizationMembership[] @relation("R41")
+ relatedCompany43 Company[] @relation("R43")
+ @@schema("concloud")
+}
+
+model OrganizationMembership {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ userId String @db.Uuid
+ role Role
+ active Boolean @default(true)
+ @@unique([organizationId,userId])
+ organization Organization @relation("R41", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+ user Profile @relation("R42", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model Company {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ name String
+ cnpj String
+ accountingSystemId String?
+ createdAt DateTime @default(now())
+ @@unique([organizationId,id])
+ @@unique([organizationId,cnpj])
+ relatedCompanyMembership0 CompanyMembership[] @relation("R0")
+ relatedInvitation1 Invitation[] @relation("R1")
+ relatedCompanyPartner2 CompanyPartner[] @relation("R2")
+ relatedCompanyTaxProfileHistory3 CompanyTaxProfileHistory[] @relation("R3")
+ relatedOnboardingItem4 OnboardingItem[] @relation("R4")
+ relatedContact5 Contact[] @relation("R5")
+ relatedBankAccount6 BankAccount[] @relation("R6")
+ relatedFinancialCategory7 FinancialCategory[] @relation("R7")
+ relatedCostCenter8 CostCenter[] @relation("R8")
+ relatedFinancialTitle9 FinancialTitle[] @relation("R9")
+ relatedInstallment10 Installment[] @relation("R10")
+ relatedSettlement11 Settlement[] @relation("R11")
+ relatedTransfer12 Transfer[] @relation("R12")
+ relatedRecurrenceRule13 RecurrenceRule[] @relation("R13")
+ relatedBankImport14 BankImport[] @relation("R14")
+ relatedBankTransaction15 BankTransaction[] @relation("R15")
+ relatedReconciliation16 Reconciliation[] @relation("R16")
+ relatedDocument17 Document[] @relation("R17")
+ relatedDocumentVersion18 DocumentVersion[] @relation("R18")
+ relatedDocumentRequest19 DocumentRequest[] @relation("R19")
+ relatedAccountingPeriod20 AccountingPeriod[] @relation("R20")
+ relatedClosingTask21 ClosingTask[] @relation("R21")
+ relatedClosingTransition22 ClosingTransition[] @relation("R22")
+ relatedExportBatch23 ExportBatch[] @relation("R23")
+ relatedProcessingBatch24 ProcessingBatch[] @relation("R24")
+ relatedReview25 Review[] @relation("R25")
+ relatedTaxObligation26 TaxObligation[] @relation("R26")
+ relatedTaxGuide27 TaxGuide[] @relation("R27")
+ relatedTaxPayment28 TaxPayment[] @relation("R28")
+ relatedFilingReceipt29 FilingReceipt[] @relation("R29")
+ relatedTicket30 Ticket[] @relation("R30")
+ relatedTicketMessage31 TicketMessage[] @relation("R31")
+ relatedAuditEvent32 AuditEvent[] @relation("R32")
+ relatedIntegrationConnection33 IntegrationConnection[] @relation("R33")
+ relatedExternalReference34 ExternalReference[] @relation("R34")
+ relatedOutboxEvent35 OutboxEvent[] @relation("R35")
+ relatedWebhookEvent36 WebhookEvent[] @relation("R36")
+ relatedSyncRun37 SyncRun[] @relation("R37")
+ relatedAiInsight38 AiInsight[] @relation("R38")
+ relatedServicePlan39 ServicePlan[] @relation("R39")
+ relatedCompanyServiceAgreement40 CompanyServiceAgreement[] @relation("R40")
+ organization Organization @relation("R43", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model CompanyMembership {
+ displayName String @default("")
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ userId String @db.Uuid
+ role Role
+ active Boolean @default(true)
+ @@unique([companyId,userId])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R0", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ user Profile @relation("R44", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model Invitation {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ email String
+ role Role
+ tokenHash String @unique
+ expiresAt DateTime
+ acceptedAt DateTime?
+ createdBy String @db.Uuid
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R1", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model CompanyPartner {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ name String
+ document String
+ share Decimal @db.Decimal(7,4)
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R2", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model CompanyTaxProfileHistory {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ regime String
+ validFrom DateTime @db.Date
+ validTo DateTime?
+ notes String?
+ @@unique([companyId,validFrom])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R3", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model OnboardingItem {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ label String
+ completedAt DateTime?
+ completedBy String? @db.Uuid
+ @@unique([companyId,label])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R4", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model Contact {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ name String
+ document String?
+ kind String
+ email String?
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R5", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ relatedFinancialTitle45 FinancialTitle[] @relation("R45")
+ @@schema("concloud")
+}
+
+model BankAccount {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ name String
+ openingBalance Decimal @default(0) @db.Decimal(18,2)
+ active Boolean @default(true)
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R6", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ relatedSettlement50 Settlement[] @relation("R50")
+ relatedTransfer51 Transfer[] @relation("R51")
+ relatedTransfer52 Transfer[] @relation("R52")
+ relatedBankImport53 BankImport[] @relation("R53")
+ relatedBankTransaction55 BankTransaction[] @relation("R55")
+ @@schema("concloud")
+}
+
+model FinancialCategory {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ name String
+ kind String
+ @@unique([companyId,name])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R7", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ relatedFinancialTitle46 FinancialTitle[] @relation("R46")
+ @@schema("concloud")
+}
+
+model CostCenter {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ name String
+ @@unique([companyId,name])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R8", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ relatedFinancialTitle47 FinancialTitle[] @relation("R47")
+ @@schema("concloud")
+}
+
+model FinancialTitle {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ description String
+ kind String
+ contactId String? @db.Uuid
+ categoryId String? @db.Uuid
+ costCenterId String? @db.Uuid
+ issueDate DateTime @db.Date
+ competence DateTime @db.Date
+ amount Decimal @db.Decimal(18,2)
+ recurrenceKey String?
+ createdAt DateTime @default(now())
+ @@unique([companyId,recurrenceKey])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R9", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ contact Contact? @relation("R45", fields: [organizationId,companyId,contactId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ category FinancialCategory? @relation("R46", fields: [organizationId,companyId,categoryId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ costCenter CostCenter? @relation("R47", fields: [organizationId,companyId,costCenterId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ relatedInstallment48 Installment[] @relation("R48")
+ @@schema("concloud")
+}
+
+model Installment {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ titleId String @db.Uuid
+ number Int
+ dueDate DateTime @db.Date
+ amount Decimal @db.Decimal(18,2)
+ @@unique([companyId,titleId,number])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R10", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ title FinancialTitle @relation("R48", fields: [organizationId,companyId,titleId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ relatedSettlement49 Settlement[] @relation("R49")
+ @@schema("concloud")
+}
+
+model Settlement {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ installmentId String @db.Uuid
+ bankAccountId String @db.Uuid
+ principal Decimal @db.Decimal(18,2)
+ interest Decimal @default(0) @db.Decimal(18,2)
+ fine Decimal @default(0) @db.Decimal(18,2)
+ discount Decimal @default(0) @db.Decimal(18,2)
+ paidAt DateTime @db.Date
+ reversedAt DateTime?
+ reversalReason String?
+ idempotencyKey String
+ @@unique([companyId,idempotencyKey])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R11", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ installment Installment @relation("R49", fields: [organizationId,companyId,installmentId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ bankAccount BankAccount @relation("R50", fields: [organizationId,companyId,bankAccountId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ relatedReconciliation57 Reconciliation[] @relation("R57")
+ @@schema("concloud")
+}
+
+model Transfer {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ sourceId String @db.Uuid
+ targetId String @db.Uuid
+ amount Decimal @db.Decimal(18,2)
+ date DateTime @db.Date
+ idempotencyKey String
+ @@unique([companyId,idempotencyKey])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R12", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ source BankAccount @relation("R51", fields: [organizationId,companyId,sourceId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ target BankAccount @relation("R52", fields: [organizationId,companyId,targetId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model RecurrenceRule {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ description String
+ kind String
+ amount Decimal @db.Decimal(18,2)
+ startMonth String
+ endMonth String?
+ day Int
+ active Boolean @default(true)
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R13", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model BankImport {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ bankAccountId String @db.Uuid
+ filename String
+ checksum String
+ createdAt DateTime @default(now())
+ @@unique([companyId,bankAccountId,checksum])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R14", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ bankAccount BankAccount @relation("R53", fields: [organizationId,companyId,bankAccountId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ relatedBankTransaction54 BankTransaction[] @relation("R54")
+ @@schema("concloud")
+}
+
+model BankTransaction {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ importId String @db.Uuid
+ bankAccountId String @db.Uuid
+ externalId String
+ description String
+ date DateTime @db.Date
+ amount Decimal @db.Decimal(18,2)
+ @@unique([companyId,bankAccountId,externalId])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R15", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ import BankImport @relation("R54", fields: [organizationId,companyId,importId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ bankAccount BankAccount @relation("R55", fields: [organizationId,companyId,bankAccountId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ relatedReconciliation56 Reconciliation[] @relation("R56")
+ @@schema("concloud")
+}
+
+model Reconciliation {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ transactionId String @db.Uuid
+ settlementId String @db.Uuid
+ amount Decimal @db.Decimal(18,2)
+ createdAt DateTime @default(now())
+ reversedAt DateTime?
+ reversalReason String?
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R16", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ transaction BankTransaction @relation("R56", fields: [organizationId,companyId,transactionId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ settlement Settlement @relation("R57", fields: [organizationId,companyId,settlementId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model Document {
+ uploadedBy String @db.Uuid
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ title String
+ competence String
+ visibility String @default("INTERNAL")
+ classification String
+ createdAt DateTime @default(now())
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R17", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ relatedDocumentVersion58 DocumentVersion[] @relation("R58")
+ relatedDocumentRequest59 DocumentRequest[] @relation("R59")
+ relatedProcessingBatch64 ProcessingBatch[] @relation("R64")
+ relatedTaxGuide68 TaxGuide[] @relation("R68")
+ relatedTaxPayment70 TaxPayment[] @relation("R70")
+ relatedFilingReceipt72 FilingReceipt[] @relation("R72")
+ @@schema("concloud")
+}
+
+model DocumentVersion {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ documentId String @db.Uuid
+ version Int
+ bucket String
+ objectKey String @unique
+ checksum String
+ mime String
+ size Int
+ createdAt DateTime @default(now())
+ @@unique([companyId,documentId,version])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R18", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ document Document @relation("R58", fields: [organizationId,companyId,documentId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model DocumentRequest {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ title String
+ competence String
+ dueDate DateTime @db.Date
+ fulfilledByDocumentId String? @db.Uuid
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R19", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ fulfilledByDocument Document? @relation("R59", fields: [organizationId,companyId,fulfilledByDocumentId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model AccountingPeriod {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ competence String
+ state ClosingState @default(AWAITING_INFORMATION)
+ responsibleId String @db.Uuid
+ reviewerId String @db.Uuid
+ dueDate DateTime @db.Date
+ revision Int @default(0)
+ exportedRevision Int?
+ @@unique([companyId,competence])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R20", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ relatedClosingTask60 ClosingTask[] @relation("R60")
+ relatedClosingTransition61 ClosingTransition[] @relation("R61")
+ relatedExportBatch62 ExportBatch[] @relation("R62")
+ relatedReview65 Review[] @relation("R65")
+ @@schema("concloud")
+}
+
+model ClosingTask {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ periodId String @db.Uuid
+ label String
+ required Boolean @default(true)
+ completedAt DateTime?
+ comment String?
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R21", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ period AccountingPeriod @relation("R60", fields: [organizationId,companyId,periodId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model ClosingTransition {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ periodId String @db.Uuid
+ fromState ClosingState
+ toState ClosingState
+ reason String
+ actorId String @db.Uuid
+ createdAt DateTime @default(now())
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R22", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ period AccountingPeriod @relation("R61", fields: [organizationId,companyId,periodId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model ExportBatch {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ periodId String @db.Uuid
+ version Int
+ revision Int
+ snapshot Json
+ manifest Json?
+ status String @default("PENDING")
+ objectKey String?
+ createdAt DateTime @default(now())
+ @@unique([companyId,periodId,version])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R23", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ period AccountingPeriod @relation("R62", fields: [organizationId,companyId,periodId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ relatedProcessingBatch63 ProcessingBatch[] @relation("R63")
+ relatedReview66 Review[] @relation("R66")
+ @@schema("concloud")
+}
+
+model ProcessingBatch {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ exportBatchId String @db.Uuid
+ operatorId String @db.Uuid
+ protocol String
+ resultDocumentId String @db.Uuid
+ processedAt DateTime @default(now())
+ @@unique([companyId,exportBatchId])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R24", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ exportBatch ExportBatch @relation("R63", fields: [organizationId,companyId,exportBatchId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ resultDocument Document @relation("R64", fields: [organizationId,companyId,resultDocumentId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model Review {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ periodId String @db.Uuid
+ exportBatchId String @db.Uuid
+ reviewerId String @db.Uuid
+ approved Boolean
+ notes String
+ createdAt DateTime @default(now())
+ @@unique([companyId,exportBatchId])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R25", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ period AccountingPeriod @relation("R65", fields: [organizationId,companyId,periodId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ exportBatch ExportBatch @relation("R66", fields: [organizationId,companyId,exportBatchId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model TaxObligation {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ name String
+ competence String
+ dueDate DateTime @db.Date
+ status String @default("PENDING")
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R26", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ relatedTaxGuide67 TaxGuide[] @relation("R67")
+ relatedFilingReceipt71 FilingReceipt[] @relation("R71")
+ @@schema("concloud")
+}
+
+model TaxGuide {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ obligationId String @db.Uuid
+ documentId String @db.Uuid
+ amount Decimal @db.Decimal(18,2)
+ dueDate DateTime @db.Date
+ publishedAt DateTime?
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R27", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ obligation TaxObligation @relation("R67", fields: [organizationId,companyId,obligationId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ document Document @relation("R68", fields: [organizationId,companyId,documentId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ relatedTaxPayment69 TaxPayment[] @relation("R69")
+ @@schema("concloud")
+}
+
+model TaxPayment {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ guideId String @db.Uuid
+ amount Decimal @db.Decimal(18,2)
+ paidAt DateTime @db.Date
+ proofDocumentId String? @db.Uuid
+ status String @default("REPORTED")
+ verifiedBy String? @db.Uuid
+ verifiedAt DateTime?
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R28", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ guide TaxGuide @relation("R69", fields: [organizationId,companyId,guideId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ proofDocument Document? @relation("R70", fields: [organizationId,companyId,proofDocumentId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model FilingReceipt {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ obligationId String @db.Uuid
+ documentId String @db.Uuid
+ protocol String
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R29", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ obligation TaxObligation @relation("R71", fields: [organizationId,companyId,obligationId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ document Document @relation("R72", fields: [organizationId,companyId,documentId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model Ticket {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ subject String
+ status String @default("OPEN")
+ createdBy String @db.Uuid
+ createdAt DateTime @default(now())
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R30", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ relatedTicketMessage73 TicketMessage[] @relation("R73")
+ @@schema("concloud")
+}
+
+model TicketMessage {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ ticketId String @db.Uuid
+ authorId String @db.Uuid
+ body String
+ createdAt DateTime @default(now())
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R31", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ ticket Ticket @relation("R73", fields: [organizationId,companyId,ticketId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model AuditEvent {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ actorId String @db.Uuid
+ action String
+ resourceId String
+ correlationId String
+ metadata Json
+ createdAt DateTime @default(now())
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R32", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model IntegrationConnection {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ provider String
+ status String @default("DISABLED")
+ externalId String?
+ @@unique([companyId,provider])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R33", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model ExternalReference {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ provider String
+ externalId String
+ resourceType String
+ resourceId String
+ @@unique([companyId,provider,resourceType,externalId])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R34", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model OutboxEvent {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ type String
+ resourceId String
+ payload Json
+ createdAt DateTime @default(now())
+ enqueuedAt DateTime?
+ completedAt DateTime?
+ attempts Int @default(0)
+ lastError String?
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R35", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model WebhookEvent {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ provider String
+ externalId String
+ payload Json
+ processedAt DateTime?
+ @@unique([companyId,provider,externalId])
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R36", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model SyncRun {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ provider String
+ status String
+ startedAt DateTime @default(now())
+ finishedAt DateTime?
+ error String?
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R37", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model AiInsight {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ content String
+ sources Json
+ model String
+ modelVersion String
+ approvedBy String? @db.Uuid
+ createdAt DateTime @default(now())
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R38", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
+
+model ServicePlan {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ name String
+ features Json
+ monthlyFee Decimal @db.Decimal(18,2)
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R39", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ relatedCompanyServiceAgreement74 CompanyServiceAgreement[] @relation("R74")
+ @@schema("concloud")
+}
+
+model CompanyServiceAgreement {
+ id String @id @default(uuid()) @db.Uuid
+ organizationId String @db.Uuid
+ companyId String @db.Uuid
+ planId String @db.Uuid
+ validFrom DateTime @db.Date
+ validTo DateTime?
+ @@unique([organizationId,companyId,id])
+ @@index([companyId])
+ company Company @relation("R40", fields: [organizationId,companyId], references: [organizationId,id], onDelete: Restrict, onUpdate: Restrict)
+ plan ServicePlan @relation("R74", fields: [organizationId,companyId,planId], references: [organizationId,companyId,id], onDelete: Restrict, onUpdate: Restrict)
+ @@schema("concloud")
+}
