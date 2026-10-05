@@ -10,3 +10,4 @@ playwright-report/
 packages/database/generated/
 .DS_Store
 .local/
+.vercel
