@@ -34,7 +34,7 @@ it.skipIf(!local)(
             'SELECT count(*)::int AS n FROM concloud._prisma_migrations WHERE finished_at IS NOT NULL',
           )
         ).rows[0].n,
-      ).toBe(5);
+      ).toBe(6);
       expect(
         (
           await db.query(
