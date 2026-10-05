@@ -24,9 +24,9 @@ body {
   margin: 0;
 }
 .marketing-page {
-  --ink: #14243f;
-  --blue: #3158d9;
-  --cyan: #20d8d2;
+  --ink: #261c17;
+  --blue: #ff5a00;
+  --cyan: #ff5a00;
   color: var(--ink);
   background: #fff;
   overflow: hidden;
@@ -54,12 +54,12 @@ body {
   display: grid;
   place-items: center;
   border-radius: 11px;
-  background: #3158d9;
+  background: #ff5a00;
   color: white;
   margin-right: 8px;
 }
 .marketing-brand i {
-  color: #20d8d2;
+  color: #ff5a00;
   font-style: normal;
 }
 .marketing-header nav {
@@ -70,7 +70,7 @@ body {
 }
 .marketing-header nav a:hover,
 .marketing-login:hover {
-  color: #3158d9;
+  color: #ff5a00;
 }
 .marketing-actions {
   display: flex;
@@ -92,12 +92,12 @@ body {
   border: 0;
 }
 .marketing-cta {
-  background: #20d8d2;
-  color: #10243e;
-  box-shadow: 0 10px 24px #20d8d22c;
+  background: #ff5a00;
+  color: #fff;
+  box-shadow: 0 10px 24px #ff5a0038;
 }
 .marketing-cta:hover {
-  background: #13c9c4;
+  background: #e94f00;
   transform: translateY(-1px);
 }
 .marketing-cta.small {
@@ -106,8 +106,8 @@ body {
   border-radius: 10px;
 }
 .marketing-secondary {
-  color: #3158d9;
-  border: 1px solid #3158d9;
+  color: #e94f00;
+  border: 1px solid #ff5a00;
   background: #fff;
 }
 .marketing-hero {
@@ -128,7 +128,7 @@ body {
   font-weight: 780;
 }
 .hero-copy h1 em {
-  color: #3158d9;
+  color: #ff5a00;
   font-style: normal;
 }
 .hero-copy > p {
@@ -142,7 +142,7 @@ body {
 .section-heading > span,
 .opening-banner > div > span,
 .why-section > div > span {
-  color: #3158d9;
+  color: #ff5a00;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 1.4px;
@@ -171,7 +171,7 @@ body {
 .hero-trust svg {
   width: 16px;
   height: 16px;
-  color: #14aaa6;
+  color: #ff5a00;
   stroke-width: 3;
 }
 .hero-visual {
@@ -179,12 +179,12 @@ body {
   position: relative;
   display: grid;
   place-items: center;
-  background: linear-gradient(145deg, #eff3ff, #e4fafa);
+  background: linear-gradient(145deg, #fff5ee, #fffaf7);
   border-radius: 48% 0 48% 48%;
 }
 .hero-orbit {
   position: absolute;
-  border: 1px solid #8299ed55;
+  border: 1px solid #ff5a0045;
   border-radius: 50%;
 }
 .hero-orbit.one {
@@ -203,7 +203,7 @@ body {
   height: 330px;
   background: white;
   border-radius: 15px;
-  box-shadow: 0 30px 70px #29446f32;
+  box-shadow: 0 30px 70px #7a2a1430;
   overflow: hidden;
   transform: rotate(-1deg);
   z-index: 1;
@@ -222,7 +222,7 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #3158d9;
+  color: #ff5a00;
   font-size: 13px;
   font-weight: 800;
 }
@@ -235,7 +235,7 @@ body {
   height: 276px;
 }
 .mock-body aside {
-  background: #18294c;
+  background: #2b1b14;
   padding: 30px 20px;
   display: flex;
   flex-direction: column;
@@ -273,7 +273,7 @@ body {
 .mock-cards svg {
   width: 17px;
   vertical-align: middle;
-  color: #3158d9;
+  color: #ff5a00;
   margin-right: 4px;
 }
 .mock-cards strong {
@@ -292,7 +292,7 @@ body {
 }
 .mock-chart span {
   flex: 1;
-  background: linear-gradient(#20d8d2, #3158d9);
+  background: linear-gradient(#ffb000, #ff5a00);
   border-radius: 4px 4px 0 0;
 }
 .mock-chart span:nth-child(1) {
@@ -321,13 +321,13 @@ body {
   background: #fff;
   padding: 13px 17px;
   border-radius: 12px;
-  box-shadow: 0 15px 35px #203a642b;
+  box-shadow: 0 15px 35px #7a2a1425;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 .hero-float > svg {
-  color: #1fb9b3;
+  color: #ff5a00;
 }
 .hero-float span {
   display: flex;
@@ -342,7 +342,7 @@ body {
 }
 .benefit-section,
 .plans-section {
-  background: #f5f7fc;
+  background: #fff7f2;
   padding: 100px 24px;
 }
 .section-heading {
@@ -377,8 +377,8 @@ body {
   border: 1px solid #e8ebf3;
 }
 .benefit-grid svg {
-  color: #3158d9;
-  background: #eef1ff;
+  color: #ff5a00;
+  background: #fff0e6;
   padding: 12px;
   width: 48px;
   height: 48px;
@@ -405,7 +405,7 @@ body {
 .steps-art {
   height: 480px;
   border-radius: 34px;
-  background: linear-gradient(145deg, #233f9c, #172b62);
+  background: linear-gradient(145deg, #ff6a00, #d84100);
   position: relative;
   display: grid;
   place-items: center;
@@ -416,14 +416,15 @@ body {
   position: absolute;
   width: 420px;
   height: 420px;
-  border: 70px solid #20d8d233;
+  border: 70px solid #ffffff2e;
   border-radius: 50%;
   right: -190px;
   top: -170px;
 }
 .steps-cloud {
   color: #fff;
-  background: #20d8d2;
+  background: #fff;
+  color: #ff5a00;
   width: 100px;
   height: 100px;
   border-radius: 28px;
@@ -464,7 +465,7 @@ body {
   display: block;
   width: 80%;
   height: 100%;
-  background: #20d8d2;
+  background: #ff5a00;
   border-radius: 4px;
 }
 .steps-copy > p {
@@ -485,8 +486,8 @@ body {
   height: 34px;
   display: grid;
   place-items: center;
-  background: #eef1ff;
-  color: #3158d9;
+  background: #fff0e6;
+  color: #ff5a00;
   border-radius: 10px;
 }
 .steps-copy li span {
@@ -504,7 +505,7 @@ body {
   margin: 10px auto 110px;
   border-radius: 28px;
   padding: 58px 65px;
-  background: linear-gradient(120deg, #3158d9, #193986);
+  background: linear-gradient(120deg, #ff6a00, #e44700);
   color: #fff;
   display: flex;
   align-items: center;
@@ -519,7 +520,7 @@ body {
   margin: 12px 0;
 }
 .opening-banner p {
-  color: #d9e1ff;
+  color: #fff2e9;
   max-width: 650px;
 }
 .opening-banner > svg {
@@ -529,7 +530,7 @@ body {
 }
 .marketing-cta.light {
   background: #fff;
-  color: #274dcc;
+  color: #d94700;
   box-shadow: none;
 }
 .plan-grid article {
@@ -540,17 +541,17 @@ body {
   position: relative;
 }
 .plan-grid article.featured {
-  background: #173778;
+  background: #2b1b14;
   color: white;
   transform: translateY(-12px);
-  box-shadow: 0 22px 45px #18367a35;
+  box-shadow: 0 22px 45px #6f250e35;
 }
 .plan-grid article > span {
   position: absolute;
   top: 0;
   right: 20px;
-  background: #20d8d2;
-  color: #132442;
+  background: #ff5a00;
+  color: #fff;
   font-size: 9px;
   font-weight: 800;
   padding: 7px 12px;
@@ -559,10 +560,10 @@ body {
 .plan-grid small {
   font-weight: 800;
   letter-spacing: 1px;
-  color: #3158d9;
+  color: #ff5a00;
 }
 .plan-grid .featured small {
-  color: #20d8d2;
+  color: #ff7a32;
 }
 .plan-grid h3 {
   font-size: 21px;
@@ -576,7 +577,7 @@ body {
 }
 .plan-grid .featured p,
 .plan-grid .featured li {
-  color: #d9e2ff;
+  color: #f8e8df;
 }
 .plan-grid ul {
   list-style: none;
@@ -591,19 +592,19 @@ body {
 }
 .plan-grid li svg {
   width: 15px;
-  color: #20b9b4;
+  color: #ff5a00;
   stroke-width: 3;
 }
 .plan-grid a {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #3158d9;
+  color: #e94f00;
   font-weight: 750;
   font-size: 13px;
 }
 .plan-grid .featured a {
-  color: #20d8d2;
+  color: #ff7a32;
 }
 .why-section {
   max-width: 1160px;
@@ -615,7 +616,7 @@ body {
   align-items: center;
 }
 .why-section > div:first-child > svg {
-  color: #20b9b4;
+  color: #ff5a00;
   width: 42px;
   height: 42px;
   margin-bottom: 20px;
@@ -631,20 +632,20 @@ body {
 .why-points article {
   min-height: 220px;
   padding: 25px;
-  background: #f5f7fc;
+  background: #fff7f2;
   border-radius: 18px;
   display: flex;
   flex-direction: column;
 }
 .why-points strong {
-  color: #3158d9;
+  color: #ff5a00;
 }
 .why-points h3 {
   font-size: 18px;
   margin-top: auto;
 }
 .faq-section {
-  background: #f5f7fc;
+  background: #fff7f2;
   padding: 100px max(24px, calc((100vw - 1160px) / 2));
   display: grid;
   grid-template-columns: 0.8fr 1.2fr;
@@ -689,7 +690,7 @@ body {
   margin: 15px 0 0;
 }
 .marketing-footer {
-  background: #112c65;
+  background: #ff5a00;
   color: #fff;
   padding: 70px max(24px, calc((100vw - 1160px) / 2)) 22px;
 }
@@ -699,22 +700,22 @@ body {
   gap: 50px;
 }
 .marketing-brand.inverse > span {
-  background: #20d8d2;
-  color: #112c65;
+  background: #fff;
+  color: #ff5a00;
 }
 .footer-main > div {
   display: flex;
   flex-direction: column;
   gap: 13px;
   font-size: 12px;
-  color: #ced9f6;
+  color: #fff1e8;
 }
 .footer-main > div:first-child p {
   max-width: 280px;
   margin-top: 18px;
 }
 .footer-main b {
-  color: #20d8d2;
+  color: #fff;
   font-size: 11px;
   letter-spacing: 0.8px;
 }
@@ -722,14 +723,14 @@ body {
   margin-top: 55px;
   padding-top: 20px;
   border-top: 1px solid #ffffff22;
-  color: #a7b7dc;
+  color: #ffe1d0;
   font-size: 11px;
 }
 
 .opening-page {
   min-height: 100vh;
-  background: linear-gradient(145deg, #f4f7ff, #f8fffe);
-  color: #172842;
+  background: linear-gradient(145deg, #fff4ec, #fff);
+  color: #261c17;
   padding-bottom: 60px;
 }
 .opening-header {
@@ -742,14 +743,14 @@ body {
   padding: 0 max(24px, calc((100vw - 1100px) / 2));
   font-size: 13px;
   font-weight: 700;
-  color: #3158d9;
+  color: #ff5a00;
 }
 .opening-shell {
   width: min(680px, calc(100% - 32px));
   margin: 55px auto 0;
   background: white;
   border-radius: 22px;
-  box-shadow: 0 22px 65px #29446f18;
+  box-shadow: 0 22px 65px #7a2a141c;
   padding: 34px 48px;
 }
 .opening-progress > div {
@@ -774,7 +775,7 @@ body {
 .opening-progress > i > b {
   display: block;
   height: 100%;
-  background: #20d8d2;
+  background: #ff5a00;
   transition: 0.3s;
 }
 .opening-step {
@@ -786,8 +787,8 @@ body {
   width: 54px;
   height: 54px;
   border-radius: 16px;
-  background: #edf0ff;
-  color: #3158d9;
+  background: #fff0e6;
+  color: #ff5a00;
   display: grid;
   place-items: center;
   margin: 0 auto 18px;
@@ -825,8 +826,8 @@ body {
 }
 .opening-step input:focus,
 .opening-step select:focus {
-  border-color: #3158d9;
-  box-shadow: 0 0 0 3px #3158d915;
+  border-color: #ff5a00;
+  box-shadow: 0 0 0 3px #ff5a001f;
 }
 .field-pair {
   display: grid;
@@ -867,8 +868,8 @@ body {
   margin-top: 4px;
 }
 .choice.active {
-  border: 2px solid #20b9b4;
-  background: #f2fffe;
+  border: 2px solid #ff5a00;
+  background: #fff7f2;
   color: #142640;
 }
 .opening-plans {
@@ -899,13 +900,13 @@ body {
   margin-top: 5px;
 }
 .opening-plans button.active {
-  border: 2px solid #3158d9;
-  background: #f5f7ff;
+  border: 2px solid #ff5a00;
+  background: #fff7f2;
 }
 .opening-plans button.active > span {
   display: grid;
   place-items: center;
-  background: #3158d9;
+  background: #ff5a00;
   color: #fff;
   border: 0;
 }
@@ -915,8 +916,8 @@ body {
 .opening-note {
   margin-top: 20px;
   padding: 15px;
-  background: #eefafa;
-  color: #42706f;
+  background: #fff2e9;
+  color: #8a3512;
   border-radius: 10px;
   font-size: 12px;
   line-height: 1.5;
@@ -977,7 +978,7 @@ body {
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 1.4px;
-  color: #3158d9;
+  color: #ff5a00;
 }
 .success-icon {
   background: #e7faf1;
