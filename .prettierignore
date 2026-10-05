@@ -7,3 +7,5 @@ package-lock.json
 playwright-report
 test-results
 .env*
+
+**/next-env.d.ts
