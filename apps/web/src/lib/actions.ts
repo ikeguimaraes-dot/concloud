@@ -8,6 +8,7 @@ import { command, createCompany, uploadDocument, acceptInvitation } from './serv
 import { requireActor, supabase, demoEnabled } from './auth';
 import { rateLimit } from './limits';
 import type { ImportRow } from '@domain/imports';
+import { database } from '@database/client';
 export type ActionState = {
   message: string;
   error?: boolean;
@@ -79,12 +80,19 @@ export async function perform(_previous: ActionState, form: FormData): Promise<A
   }
 }
 export async function login(_previous: ActionState, form: FormData): Promise<ActionState> {
-  const email = String(form.get('email') ?? '')
+  const identifier = String(form.get('identifier') ?? form.get('email') ?? '')
     .trim()
     .toLowerCase();
   const password = String(form.get('password') ?? '');
   try {
-    await rateLimit(`login:${email}`, 5);
+    await rateLimit(`login:${identifier}`, 5);
+    let email = identifier;
+    if (!identifier.includes('@')) {
+      const cpf = identifier.replace(/\D/g, '');
+      const rows = await database().$queryRaw<Array<{ email: string }>>`
+        select email from concloud."OpeningLead" where cpf = ${cpf} limit 1`;
+      email = rows[0]?.email ?? 'acesso-invalido@example.invalid';
+    }
     const client = await supabase();
     const { error } = await client.auth.signInWithPassword({ email, password });
     if (error) return { message: 'E-mail ou senha inválidos.', error: true };

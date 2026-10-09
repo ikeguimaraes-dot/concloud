@@ -44,10 +44,10 @@ export default function Login() {
       <section className="login-form">
         <span className="eyebrow">BEM-VINDO AO CONCLOUD</span>
         <h2>Vamos cuidar da sua empresa?</h2>
-        <p>Acesse seu espaço com o e-mail cadastrado.</p>
+        <p>Acesse seu espaço com seu CPF ou e-mail cadastrado.</p>
         {authConfigured() ? (
           <ActionForm action={login} label="Entrar na plataforma">
-            <Field name="email" label="E-mail" type="email" placeholder="voce@empresa.com.br" />
+            <Field name="identifier" label="CPF ou e-mail" placeholder="000.000.000-00" />
             <Field name="password" label="Senha" type="password" />
           </ActionForm>
         ) : (
