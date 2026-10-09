@@ -108,7 +108,8 @@ export async function register(_previous: ActionState, form: FormData): Promise<
       .toLowerCase();
     await rateLimit(`register:${email}`, 3);
     const password = String(form.get('password') ?? '');
-    if (password.length < 12) return { message: 'Use pelo menos 12 caracteres.', error: true };
+    if (password.length < 8 || !/[^\p{L}\p{N}]/u.test(password))
+      return { message: 'Use pelo menos 8 caracteres e um caractere especial.', error: true };
     const client = await supabase();
     const { error } = await client.auth.signUp({ email, password });
     if (error) return { message: 'Não foi possível cadastrar este acesso.', error: true };

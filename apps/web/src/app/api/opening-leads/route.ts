@@ -12,8 +12,12 @@ const schema = z
       .pipe(z.string().length(11)),
     email: z.string().trim().email().max(180),
     phone: z.string().trim().min(8).max(30),
-    password: z.string().min(12).max(128),
-    passwordConfirmation: z.string().min(12).max(128),
+    password: z
+      .string()
+      .min(8)
+      .max(128)
+      .regex(/[^\p{L}\p{N}]/u),
+    passwordConfirmation: z.string().min(8).max(128),
     activity: z.string().trim().min(2).max(180),
     zipCode: z.string().trim().min(5).max(12),
     addressType: z.enum(['residencial', 'orientacao']),

@@ -29,7 +29,11 @@ export default async function Invite({
           >
             <ActionForm action={register} label="Criar acesso">
               <Field name="email" label="E-mail" type="email" />
-              <Field name="password" label="Senha (pelo menos 12 caracteres)" type="password" />
+              <Field
+                name="password"
+                label="Senha (8 caracteres e um caractere especial)"
+                type="password"
+              />
             </ActionForm>
           </Panel>
         </>

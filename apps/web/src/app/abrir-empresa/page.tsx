@@ -128,7 +128,10 @@ export default function OpenCompany() {
   const change = (key: keyof Lead, value: string) =>
     setLead((current) => ({ ...current, [key]: value }));
   const selectedPlan = plans.find((plan) => plan.id === lead.plan);
-  const passwordIsValid = lead.password.length >= 12 && lead.password === lead.passwordConfirmation;
+  const passwordIsValid =
+    lead.password.length >= 8 &&
+    /[^\p{L}\p{N}]/u.test(lead.password) &&
+    lead.password === lead.passwordConfirmation;
   const valid =
     step === 1
       ? !!(
@@ -240,7 +243,7 @@ export default function OpenCompany() {
             </label>
             <div className="field-pair equal">
               <label>
-                Crie uma senha <small>Mínimo de 12 caracteres</small>
+                Crie uma senha <small>8 caracteres e um símbolo</small>
                 <span className="password-field">
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -269,7 +272,7 @@ export default function OpenCompany() {
             </div>
             {lead.passwordConfirmation && !passwordIsValid && (
               <p className="field-hint error">
-                Use 12 caracteres e digite a mesma senha nos dois campos.
+                Use 8 caracteres, um símbolo e digite a mesma senha nos dois campos.
               </p>
             )}
             <div className="trust-line">
