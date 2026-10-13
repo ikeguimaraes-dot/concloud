@@ -73,14 +73,11 @@ export async function POST(request: Request) {
       return new Response(null, { status: 204 });
 
     await database().$executeRaw`
-      update concloud."OpeningLead"
-      set "paymentStatus" = case when "paymentStatus"='PAID' then 'PAID' else ${status} end,
-          "pagbankPaymentId" = coalesce(${charge?.id ?? null}, "pagbankPaymentId"),
-          "pagbankSubscriptionId" = coalesce(${event.subscriptions?.[0]?.id ?? null}, "pagbankSubscriptionId"),
-          "paidAt" = case when ${status}='PAID' then coalesce(${charge?.paid_at ? new Date(charge.paid_at) : null}, current_timestamp) else "paidAt" end,
-          "paymentUpdatedAt" = current_timestamp
-      where (${leadId}::uuid is not null and id=${leadId}::uuid)
-         or (${checkoutId ?? null}::text is not null and "pagbankCheckoutId"=${checkoutId ?? null})`;
+      select concloud.update_opening_lead_payment(
+        ${leadId}::uuid, ${checkoutId ?? null}, ${status}, ${charge?.id ?? null},
+        ${event.subscriptions?.[0]?.id ?? null},
+        ${charge?.paid_at ? new Date(charge.paid_at) : null}
+      )`;
     return new Response(null, { status: 204 });
   } catch {
     console.error(JSON.stringify({ event: 'pagbank.webhook.failed', code: 'PROCESSING_ERROR' }));

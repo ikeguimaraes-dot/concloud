@@ -31,8 +31,7 @@ export async function POST(request: Request) {
     const { cadastro } = schema.parse(await request.json());
     await rateLimit(`pagbank-checkout:${cadastro}`, 5);
     const leads = await database().$queryRaw<OpeningLead[]>`
-      select id,name,cpf,email,phone,plan,"pagbankCheckoutId","pagbankCheckoutUrl","paymentStatus"
-      from concloud."OpeningLead" where id = ${cadastro}::uuid limit 1`;
+      select * from concloud.get_opening_lead_for_checkout(${cadastro}::uuid)`;
     const lead = leads[0];
     if (!lead) return Response.json({ error: 'Cadastro não encontrado.' }, { status: 404 });
     if (lead.paymentStatus === 'PAID')
@@ -89,12 +88,10 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Não foi possível iniciar o pagamento.' }, { status: 502 });
     }
     await database().$executeRaw`
-      update concloud."OpeningLead"
-      set "pagbankCheckoutId"=${checkout.id}, "pagbankCheckoutUrl"=${checkoutUrl},
-          "pagbankPlanId"=${checkout.recurrence_plan?.id ?? null},
-          "paymentAmount"=${plan.amount}, "paymentStatus"='PENDING',
-          "paymentUpdatedAt"=current_timestamp
-      where id=${lead.id}::uuid`;
+      select concloud.set_opening_lead_checkout(
+        ${lead.id}::uuid, ${checkout.id}, ${checkoutUrl},
+        ${checkout.recurrence_plan?.id ?? null}, ${plan.amount}
+      )`;
     return Response.json({ checkoutUrl });
   } catch (error) {
     console.error(
