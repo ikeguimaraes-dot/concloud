@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { database } from '@database/client';
 import { rateLimit } from '@/lib/limits';
 import { createClient } from '@supabase/supabase-js';
+import { openingDraftHash } from '@/lib/opening-draft';
 
 const schema = z
   .object({
@@ -24,6 +25,7 @@ const schema = z
     city: z.string().trim().min(2).max(120),
     state: z.string().trim().min(2).max(20),
     plan: z.enum(['essencial', 'gestao', 'proximo']),
+    draftToken: z.string().uuid(),
   })
   .refine((input) => input.password === input.passwordConfirmation, {
     path: ['passwordConfirmation'],
@@ -69,7 +71,7 @@ export async function POST(request: Request) {
       select concloud.submit_opening_lead(
         ${input.name}, ${input.cpf}, ${input.email.toLowerCase()}, ${input.phone},
         ${input.activity}, ${input.zipCode}, ${input.addressType}, ${input.city},
-        ${input.state}, ${input.plan}, ${authUserId}::uuid
+        ${input.state}, ${input.plan}, ${authUserId}::uuid, ${openingDraftHash(input.draftToken)}
       ) as id`;
     return Response.json({ ok: true, id: rows[0]?.id }, { status: 201 });
   } catch (error) {
@@ -81,7 +83,7 @@ export async function POST(request: Request) {
     console.error(
       JSON.stringify({
         event: 'opening.signup.failed',
-        code: error instanceof z.ZodError ? 'INVALID_INPUT' : databaseCode ?? 'UNKNOWN',
+        code: error instanceof z.ZodError ? 'INVALID_INPUT' : (databaseCode ?? 'UNKNOWN'),
         errorType: error instanceof Error ? error.constructor.name : typeof error,
       }),
     );
@@ -89,7 +91,7 @@ export async function POST(request: Request) {
       {
         ok: false,
         error: 'Cadastro inválido.',
-        reason: error instanceof z.ZodError ? 'INVALID_INPUT' : databaseCode ?? 'DATABASE_ERROR',
+        reason: error instanceof z.ZodError ? 'INVALID_INPUT' : (databaseCode ?? 'DATABASE_ERROR'),
       },
       { status: 400 },
     );

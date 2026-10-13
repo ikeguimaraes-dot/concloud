@@ -30,6 +30,7 @@ type Lead = {
   city: string;
   state: string;
   plan: string;
+  marketingConsent: boolean;
 };
 const initial: Lead = {
   name: '',
@@ -44,6 +45,7 @@ const initial: Lead = {
   city: '',
   state: '',
   plan: '',
+  marketingConsent: false,
 };
 const activities = [
   'Advocacia',
@@ -123,6 +125,8 @@ export default function OpenCompany() {
   const [step, setStep] = useState(1);
   const [lead, setLead] = useState(initial);
   const [sending, setSending] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [draftToken] = useState(() => crypto.randomUUID());
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const change = (key: keyof Lead, value: string) =>
@@ -147,6 +151,30 @@ export default function OpenCompany() {
           ? !!lead.plan
           : true;
 
+  async function advance() {
+    setError('');
+    setSaving(true);
+    try {
+      const response = await fetch('/api/opening-leads/draft', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          ...lead,
+          password: undefined,
+          passwordConfirmation: undefined,
+          draftToken,
+          step,
+        }),
+      });
+      if (!response.ok) throw new Error();
+      setStep((current) => current + 1);
+    } catch {
+      setError('Não foi possível salvar seu progresso agora. Tente novamente.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function submit() {
     setSending(true);
     setError('');
@@ -154,7 +182,7 @@ export default function OpenCompany() {
       const response = await fetch('/api/opening-leads', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(lead),
+        body: JSON.stringify({ ...lead, draftToken }),
       });
       const result = (await response.json()) as { id?: string };
       if (!response.ok || !result.id) throw new Error();
@@ -279,6 +307,20 @@ export default function OpenCompany() {
               <LockKeyhole /> Seus dados são protegidos e a senha não é armazenada no cadastro
               comercial.
             </div>
+            <label className="consent-choice">
+              <input
+                type="checkbox"
+                checked={lead.marketingConsent}
+                onChange={(event) =>
+                  setLead((current) => ({ ...current, marketingConsent: event.target.checked }))
+                }
+              />
+              <span>
+                Autorizo a ConCloud a entrar em contato por e-mail ou celular para me ajudar a
+                concluir a abertura.{' '}
+                <small>Opcional. Você pode pedir para parar a qualquer momento.</small>
+              </span>
+            </label>
           </section>
         )}
 
@@ -436,9 +478,10 @@ export default function OpenCompany() {
                 <Check /> Acompanhamento pelo seu acesso ConCloud
               </span>
             </div>
-            {error && <p className="form-error">{error}</p>}
           </section>
         )}
+
+        {error && <p className="form-error">{error}</p>}
 
         <div className="opening-nav">
           {step > 1 ? (
@@ -456,10 +499,10 @@ export default function OpenCompany() {
             <button
               type="button"
               className="marketing-cta"
-              disabled={!valid}
-              onClick={() => setStep((current) => current + 1)}
+              disabled={!valid || saving}
+              onClick={advance}
             >
-              Continuar <ArrowRight />
+              {saving ? <Loader2 className="spin" /> : null} Continuar <ArrowRight />
             </button>
           ) : (
             <button

@@ -887,6 +887,28 @@ body {
 .trust-line {
   margin-top: 22px;
 }
+
+.consent-choice {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 1.45;
+}
+
+.consent-choice input {
+  width: 18px !important;
+  height: 18px;
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+
+.consent-choice small {
+  display: block;
+  color: #64748b;
+  margin-top: 2px;
+}
 .trust-line svg,
 .secure-footer svg {
   width: 15px;
