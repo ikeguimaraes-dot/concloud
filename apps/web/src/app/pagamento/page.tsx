@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { ArrowRight, Check, Cloud, CreditCard, LockKeyhole, ShieldCheck } from 'lucide-react';
+import { Check, Cloud, CreditCard, LockKeyhole, ShieldCheck } from 'lucide-react';
+import { CheckoutButton } from './checkout-button';
 
 const plans: Record<string, { name: string; price: string }> = {
   essencial: { name: 'Essencial', price: 'R$ 99/mês' },
@@ -14,8 +15,6 @@ export default async function Payment({
 }) {
   const { cadastro = '', plano = 'essencial' } = await searchParams;
   const selected = plans[plano] ?? plans.essencial;
-  const checkoutUrl = process.env.NEXT_PUBLIC_PAGSEGURO_CHECKOUT_URL;
-  const returnUrl = `/documentos-abertura?cadastro=${encodeURIComponent(cadastro)}`;
 
   return (
     <main className="opening-page checkout-page">
@@ -54,21 +53,7 @@ export default async function Payment({
             <Check /> Documentos enviados somente após o pagamento
           </span>
         </div>
-        {checkoutUrl ? (
-          <a className="marketing-cta payment-cta full" href={checkoutUrl}>
-            Pagar com PagSeguro <ArrowRight />
-          </a>
-        ) : (
-          <Link className="marketing-cta payment-cta full" href={returnUrl}>
-            Continuar para o ambiente de pagamento <ArrowRight />
-          </Link>
-        )}
-        {!checkoutUrl && (
-          <p className="integration-note">
-            Ambiente de demonstração: defina <code>NEXT_PUBLIC_PAGSEGURO_CHECKOUT_URL</code> para
-            conectar o checkout real. O retorno deve apontar para <b>{returnUrl}</b>.
-          </p>
-        )}
+        <CheckoutButton cadastro={cadastro} />
         <div className="payment-trust">
           <ShieldCheck /> Pagamento processado pelo PagSeguro <span>·</span> <LockKeyhole /> A
           ConCloud não armazena dados do cartão

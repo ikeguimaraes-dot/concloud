@@ -1,0 +1,89 @@
+import { createPublicKey, verify } from 'node:crypto';
+import { z } from 'zod';
+import { database } from '@database/client';
+import { pagBankApiUrl, pagBankToken } from '@/lib/pagbank';
+
+export const runtime = 'nodejs';
+
+let cachedPublicKey: { value: string; expiresAt: number } | null = null;
+
+async function webhookPublicKey() {
+  if (cachedPublicKey && cachedPublicKey.expiresAt > Date.now()) return cachedPublicKey.value;
+  const response = await fetch(pagBankApiUrl('/public-keys?type=webhook'), {
+    headers: { accept: 'application/json', authorization: `Bearer ${pagBankToken()}` },
+    cache: 'no-store',
+  });
+  const result = (await response.json()) as { public_key?: string };
+  if (!response.ok || !result.public_key) throw new Error('PAGBANK_PUBLIC_KEY_UNAVAILABLE');
+  cachedPublicKey = { value: result.public_key, expiresAt: Date.now() + 60 * 60 * 1000 };
+  return result.public_key;
+}
+
+async function validSignature(rawBody: Buffer, signatureHeader: string | null) {
+  if (!signatureHeader) return false;
+  const publicKey = createPublicKey({
+    key: Buffer.from(await webhookPublicKey(), 'base64'),
+    format: 'der',
+    type: 'spki',
+  });
+  return signatureHeader
+    .split(',')
+    .map((signature) => signature.trim())
+    .filter(Boolean)
+    .some((signature) => {
+      try {
+        return verify('sha256', rawBody, publicKey, Buffer.from(signature, 'base64'));
+      } catch {
+        return false;
+      }
+    });
+}
+
+type PagBankEvent = {
+  id?: string;
+  reference_id?: string;
+  status?: string;
+  checkout?: { id?: string; reference_id?: string; status?: string };
+  charges?: Array<{ id?: string; reference_id?: string; status?: string; paid_at?: string }>;
+  subscriptions?: Array<{ id?: string; status?: string }>;
+};
+
+const paymentStatuses = new Set([
+  'WAITING',
+  'IN_ANALYSIS',
+  'PAID',
+  'DECLINED',
+  'CANCELED',
+  'EXPIRED',
+]);
+
+export async function POST(request: Request) {
+  const rawBody = Buffer.from(await request.arrayBuffer());
+  try {
+    if (!(await validSignature(rawBody, request.headers.get('x-payload-signature'))))
+      return Response.json({ error: 'INVALID_SIGNATURE' }, { status: 401 });
+    const event = JSON.parse(rawBody.toString('utf8')) as PagBankEvent;
+    const charge = event.charges?.[0];
+    const status = charge?.status ?? event.status ?? event.checkout?.status;
+    const referenceId = charge?.reference_id ?? event.reference_id ?? event.checkout?.reference_id;
+    const parsedReference = z.string().uuid().safeParse(referenceId);
+    const leadId = parsedReference.success ? parsedReference.data : null;
+    const checkoutId = event.checkout?.id ?? (event.id?.startsWith('CHEC_') ? event.id : undefined);
+    if (!status || !paymentStatuses.has(status) || (!leadId && !checkoutId))
+      return new Response(null, { status: 204 });
+
+    await database().$executeRaw`
+      update concloud."OpeningLead"
+      set "paymentStatus" = case when "paymentStatus"='PAID' then 'PAID' else ${status} end,
+          "pagbankPaymentId" = coalesce(${charge?.id ?? null}, "pagbankPaymentId"),
+          "pagbankSubscriptionId" = coalesce(${event.subscriptions?.[0]?.id ?? null}, "pagbankSubscriptionId"),
+          "paidAt" = case when ${status}='PAID' then coalesce(${charge?.paid_at ? new Date(charge.paid_at) : null}, current_timestamp) else "paidAt" end,
+          "paymentUpdatedAt" = current_timestamp
+      where (${leadId}::uuid is not null and id=${leadId}::uuid)
+         or (${checkoutId ?? null}::text is not null and "pagbankCheckoutId"=${checkoutId ?? null})`;
+    return new Response(null, { status: 204 });
+  } catch {
+    console.error(JSON.stringify({ event: 'pagbank.webhook.failed', code: 'PROCESSING_ERROR' }));
+    return Response.json({ error: 'PROCESSING_ERROR' }, { status: 400 });
+  }
+}

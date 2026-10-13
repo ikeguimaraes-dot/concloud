@@ -1,5 +1,5 @@
 import EmbeddedPostgres from 'embedded-postgres';
-import { mkdir } from 'node:fs/promises';
+import { access, mkdir } from 'node:fs/promises';
 await mkdir('.local', { recursive: true });
 const pg = new EmbeddedPostgres({
   databaseDir: '.local/postgres',
@@ -11,7 +11,11 @@ const pg = new EmbeddedPostgres({
   onLog: () => {},
   onError: () => {},
 });
-await pg.initialise();
+try {
+  await access('.local/postgres/PG_VERSION');
+} catch {
+  await pg.initialise();
+}
 await pg.start();
 console.log('PostgreSQL local em 127.0.0.1:54322. Ctrl+C para encerrar.');
 async function stop() {

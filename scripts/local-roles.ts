@@ -5,7 +5,13 @@ if (!/^postgresql:\/\/[^@]+@(localhost|127\.0\.0\.1):/.test(url))
 const pool = new Pool({ connectionString: url });
 try {
   await pool.query(
-    "ALTER ROLE concloud_runtime LOGIN PASSWORD 'local_dev_only'; ALTER ROLE concloud_dispatcher LOGIN PASSWORD 'local_dispatcher_only';",
+    `DO $$
+     BEGIN
+       IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN CREATE ROLE anon NOLOGIN; END IF;
+       IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN CREATE ROLE authenticated NOLOGIN; END IF;
+     END $$;
+     ALTER ROLE concloud_runtime LOGIN PASSWORD 'local_dev_only';
+     ALTER ROLE concloud_dispatcher LOGIN PASSWORD 'local_dispatcher_only';`,
   );
   console.log('Credenciais locais de runtime configuradas.');
 } finally {

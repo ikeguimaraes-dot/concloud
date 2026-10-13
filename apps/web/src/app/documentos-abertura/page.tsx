@@ -1,13 +1,15 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   Check,
   ChevronDown,
+  Clock3,
   Cloud,
   FileCheck2,
   FileUp,
   Info,
+  Loader2,
   Plus,
   ShieldCheck,
   Users,
@@ -44,10 +46,86 @@ const documents = [
 
 export default function OpeningDocuments() {
   const [files, setFiles] = useState<Record<string, File | undefined>>({});
+  const [payment, setPayment] = useState<'checking' | 'paid' | 'pending' | 'invalid'>('checking');
+  const cadastro =
+    typeof window === 'undefined'
+      ? ''
+      : (new URLSearchParams(window.location.search).get('cadastro') ?? '');
   const complete = useMemo(
     () => documents.filter((document) => files[document.id]).length,
     [files],
   );
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('cadastro') ?? '';
+    const endpoint = id
+      ? `/api/opening-leads/${encodeURIComponent(id)}/payment-status`
+      : '/api/opening-leads/invalid/payment-status';
+    fetch(endpoint, { cache: 'no-store' })
+      .then(async (response) => {
+        const result = (await response.json()) as { paid?: boolean };
+        setPayment(response.ok && result.paid ? 'paid' : response.ok ? 'pending' : 'invalid');
+      })
+      .catch(() => setPayment('invalid'));
+  }, []);
+
+  if (payment !== 'paid')
+    return (
+      <main className="opening-page checkout-page">
+        <header className="opening-header">
+          <Link className="marketing-brand" href="/">
+            <span>
+              <Cloud />
+            </span>
+            ConCloud<i>.</i>
+          </Link>
+          <span>
+            <ShieldCheck /> Ambiente seguro
+          </span>
+        </header>
+        <div className="opening-shell checkout-shell">
+          <div className="step-icon">
+            {payment === 'checking' ? <Loader2 className="spin" /> : <Clock3 />}
+          </div>
+          <span className="marketing-kicker">CONFIRMAÇÃO DO PAGAMENTO</span>
+          <h1>
+            {payment === 'checking'
+              ? 'Verificando seu pagamento'
+              : payment === 'pending'
+                ? 'Pagamento ainda não confirmado'
+                : 'Não encontramos este cadastro'}
+          </h1>
+          <p>
+            {payment === 'pending'
+              ? 'Aguarde a aprovação do PagBank. Assim que recebermos a confirmação, seus documentos serão liberados.'
+              : payment === 'invalid'
+                ? 'Volte ao fluxo de abertura e confira o link utilizado.'
+                : 'Isso pode levar alguns segundos.'}
+          </p>
+          {payment === 'pending' && (
+            <button
+              className="marketing-cta payment-cta full"
+              type="button"
+              onClick={() => window.location.reload()}
+            >
+              Verificar novamente
+            </button>
+          )}
+          {payment === 'invalid' && (
+            <Link className="marketing-cta full" href="/abrir-empresa">
+              Voltar para abertura
+            </Link>
+          )}
+          {payment === 'pending' && cadastro && (
+            <Link
+              className="marketing-secondary full"
+              href={`/pagamento?cadastro=${encodeURIComponent(cadastro)}`}
+            >
+              Voltar ao pagamento
+            </Link>
+          )}
+        </div>
+      </main>
+    );
   return (
     <main className="documents-page">
       <header className="opening-header">
