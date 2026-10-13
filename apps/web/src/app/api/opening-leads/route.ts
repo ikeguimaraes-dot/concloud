@@ -29,20 +29,22 @@ const schema = z
     path: ['passwordConfirmation'],
   });
 export async function POST(request: Request) {
+  let auth: ReturnType<typeof createClient> | null = null;
+  let authUserId: string | null = null;
   try {
     const input = schema.parse(await request.json());
     await rateLimit(`opening:${input.cpf}`, 3);
-    let authUserId: string | null = null;
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (url && key) {
-      const auth = createClient(url, key, {
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (url && serviceRoleKey) {
+      auth = createClient(url, serviceRoleKey, {
         auth: { persistSession: false, autoRefreshToken: false },
       });
-      const { data, error } = await auth.auth.signUp({
+      const { data, error } = await auth.auth.admin.createUser({
         email: input.email.toLowerCase(),
         password: input.password,
-        options: { data: { cpf: input.cpf, name: input.name } },
+        email_confirm: true,
+        user_metadata: { cpf: input.cpf, name: input.name },
       });
       if (error)
         return Response.json(
@@ -59,6 +61,7 @@ export async function POST(request: Request) {
       ) as id`;
     return Response.json({ ok: true, id: rows[0]?.id }, { status: 201 });
   } catch (error) {
+    if (auth && authUserId) await auth.auth.admin.deleteUser(authUserId).catch(() => undefined);
     console.error(
       JSON.stringify({
         event: 'opening.signup.failed',
