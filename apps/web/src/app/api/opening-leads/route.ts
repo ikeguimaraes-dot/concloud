@@ -74,12 +74,24 @@ export async function POST(request: Request) {
     return Response.json({ ok: true, id: rows[0]?.id }, { status: 201 });
   } catch (error) {
     if (auth && authUserId) await auth.auth.admin.deleteUser(authUserId).catch(() => undefined);
+    const databaseCode =
+      error && typeof error === 'object' && 'code' in error && typeof error.code === 'string'
+        ? error.code
+        : undefined;
     console.error(
       JSON.stringify({
         event: 'opening.signup.failed',
-        code: error instanceof z.ZodError ? 'INVALID_INPUT' : 'UNKNOWN',
+        code: error instanceof z.ZodError ? 'INVALID_INPUT' : databaseCode ?? 'UNKNOWN',
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
       }),
     );
-    return Response.json({ ok: false, error: 'Cadastro inválido.' }, { status: 400 });
+    return Response.json(
+      {
+        ok: false,
+        error: 'Cadastro inválido.',
+        reason: error instanceof z.ZodError ? 'INVALID_INPUT' : databaseCode ?? 'DATABASE_ERROR',
+      },
+      { status: 400 },
+    );
   }
 }
