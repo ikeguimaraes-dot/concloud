@@ -46,11 +46,23 @@ export async function POST(request: Request) {
         email_confirm: true,
         user_metadata: { cpf: input.cpf, name: input.name },
       });
-      if (error)
+      if (error) {
+        console.error(
+          JSON.stringify({
+            event: 'opening.auth.create.failed',
+            code: error.code ?? 'AUTH_CREATE_FAILED',
+            status: error.status,
+          }),
+        );
         return Response.json(
-          { ok: false, error: 'Não foi possível criar o acesso.' },
+          {
+            ok: false,
+            error: 'Não foi possível criar o acesso.',
+            reason: error.code ?? 'AUTH_CREATE_FAILED',
+          },
           { status: 409 },
         );
+      }
       authUserId = data.user?.id ?? null;
     }
     const rows = await database().$queryRaw<Array<{ id: string }>>`
