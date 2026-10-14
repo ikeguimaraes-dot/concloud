@@ -45,27 +45,21 @@ body {
   display: flex;
   align-items: center;
   width: 190px;
-  height: 48px;
+  height: 64px;
 }
 .brand-logo {
   display: block;
   width: 100%;
   height: 100%;
-  overflow: hidden;
-  position: relative;
 }
 .brand-logo > img {
-  position: absolute;
-  width: 124%;
-  max-width: none;
-  height: auto;
-  left: -8%;
-  top: -26%;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .brand-logo.compact > img {
-  width: 475%;
-  left: -31%;
-  top: -27%;
+  object-position: left center;
 }
 .marketing-header nav {
   display: flex;
@@ -1562,7 +1556,7 @@ body {
   }
   .marketing-brand {
     width: 155px;
-    height: 40px;
+    height: 52px;
   }
   .marketing-cta.small {
     padding: 0 12px;
@@ -1744,7 +1738,7 @@ small {
   display: flex;
   align-items: center;
   width: 190px;
-  height: 48px;
+  height: 64px;
 }
 .workspace-label {
   font-size: 9px;
@@ -2778,7 +2772,7 @@ footer {
   }
   .sidebar .brand {
     width: 170px;
-    height: 42px;
+    height: 57px;
   }
   .workspace-label,
   .company-switch,
