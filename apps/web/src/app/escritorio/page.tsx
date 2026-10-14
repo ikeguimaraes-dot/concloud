@@ -1,14 +1,25 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { Building2, ArrowUpRight, Plus, FolderCheck } from 'lucide-react';
 import { requireActor } from '@/lib/auth';
 import { companies, officeOperations } from '@/lib/service';
 import { Shell } from '@/components/shell';
 import { ActionForm } from '@/components/forms';
 import { Field, Select, Panel, Empty } from '@/components/fields';
+import { openingResumeForUser } from '@/lib/opening-resume';
 export const dynamic = 'force-dynamic';
 export default async function Office() {
   const actor = await requireActor();
   const data = await companies(actor);
+  if (!data.companies.length) {
+    const opening = await openingResumeForUser(actor.id);
+    if (opening)
+      redirect(
+        opening.paymentStatus === 'PAID'
+          ? `/documentos-abertura?cadastro=${encodeURIComponent(opening.id)}`
+          : `/pagamento?cadastro=${encodeURIComponent(opening.id)}&plano=${encodeURIComponent(opening.plan)}`,
+      );
+  }
   const operations = await officeOperations(actor);
   const adminOrgs = data.organizations.filter((m) => ['ORG_ADMIN', 'SUPER_ADMIN'].includes(m.role));
   return (

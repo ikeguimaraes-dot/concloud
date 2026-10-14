@@ -1,10 +1,10 @@
 @import 'tailwindcss';
 :root {
-  --background: #f7f8fc;
-  --foreground: #18253c;
-  --primary: #5469e8;
-  --border: #e7ebf3;
-  --muted: #768198;
+  --background: #fbf8f5;
+  --foreground: #2b211c;
+  --primary: #ff5a00;
+  --border: #eadfd7;
+  --muted: #7d7068;
   --card: #fff;
   --radius: 16px;
   font-family:
@@ -1748,7 +1748,7 @@ small {
 .sidebar {
   width: 255px;
   flex: none;
-  background: #fff;
+  background: #fffdfb;
   border-right: 1px solid var(--border);
   position: fixed;
   inset: 0 auto 0 0;
@@ -1816,19 +1816,19 @@ small {
   white-space: nowrap;
 }
 .nav-item:hover {
-  background: #f6f7fb;
-  color: #4456c3;
+  background: #fff3eb;
+  color: #d94d00;
 }
 .nav-item.active {
-  background: #edf0ff;
-  color: #5264d6;
+  background: #fff0e6;
+  color: #d94d00;
   font-weight: 650;
 }
 .nav-item.active:before {
   content: '';
   height: 16px;
   width: 3px;
-  background: #6678e9;
+  background: #ff5a00;
   position: absolute;
   left: 0;
   border-radius: 0 3px 3px 0;
@@ -1838,11 +1838,11 @@ small {
   padding-top: 25px;
 }
 .support-note {
-  background: linear-gradient(135deg, #f4f5fe, #f2f7fb);
+  background: linear-gradient(135deg, #fff3eb, #fff8f3);
   border-radius: 12px;
   padding: 18px;
   margin-bottom: 18px;
-  color: #6471bc;
+  color: #c64908;
 }
 .support-note strong {
   display: block;
@@ -1889,8 +1889,8 @@ small {
   color: #7f899d;
 }
 .avatar {
-  background: #edf0fa;
-  color: #6976a7;
+  background: #fff0e6;
+  color: #d94d00;
   display: grid;
   place-items: center;
   width: 34px;
@@ -2229,12 +2229,12 @@ small {
   transition: background 0.15s;
 }
 .button-primary {
-  background: #566be6;
+  background: #ff5a00;
   color: #fff;
-  box-shadow: 0 3px 5px #536ce310;
+  box-shadow: 0 8px 20px #ff5a0020;
 }
 .button-primary:hover {
-  background: #445bd6;
+  background: #df4f00;
 }
 .button-outline {
   background: #fff;
@@ -2581,8 +2581,8 @@ details[open] > summary {
   display: flex;
   gap: 20px;
   align-items: center;
-  background: #edf1fc;
-  border: 1px solid #e1e8f9;
+  background: #fff2e9;
+  border: 1px solid #ffe0cc;
   padding: 25px;
   border-radius: 12px;
   margin-bottom: 26px;
@@ -2591,7 +2591,7 @@ details[open] > summary {
   padding: 15px;
   background: #fff8;
   border-radius: 13px;
-  color: #7c8bcc;
+  color: #ff5a00;
 }
 .welcome-strip h2 {
   font-size: 16px;
@@ -2665,7 +2665,12 @@ footer {
   display: flex;
   flex-direction: column;
   padding: 52px 65px;
-  background: linear-gradient(145deg, #edf1ff, #e8edff 55%, #e4eaff);
+  background: linear-gradient(145deg, #fff5ee, #fff0e5 55%, #ffe9d9);
+}
+.login-story > .brand {
+  width: 420px;
+  height: 140px;
+  max-width: 82%;
 }
 .login-copy {
   margin: auto 0;
@@ -2679,11 +2684,11 @@ footer {
 }
 .login-copy h1 em {
   font-style: normal;
-  color: #657ada;
+  color: #ff5a00;
 }
 .login-copy > p {
   font-size: 14px;
-  color: #7b89a5;
+  color: #796b62;
   max-width: 370px;
 }
 .login-benefits {
@@ -2691,7 +2696,7 @@ footer {
   flex-direction: column;
   gap: 17px;
   font-size: 12px;
-  color: #6f7fa4;
+  color: #765f52;
   margin-top: 40px;
 }
 .login-benefits div {

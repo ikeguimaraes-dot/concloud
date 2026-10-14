@@ -8,7 +8,7 @@ import { command, createCompany, uploadDocument, acceptInvitation } from './serv
 import { requireActor, supabase, demoEnabled } from './auth';
 import { rateLimit } from './limits';
 import type { ImportRow } from '@domain/imports';
-import { database } from '@database/client';
+import { openingEmailByCpf } from './opening-resume';
 export type ActionState = {
   message: string;
   error?: boolean;
@@ -89,9 +89,7 @@ export async function login(_previous: ActionState, form: FormData): Promise<Act
     let email = identifier;
     if (!identifier.includes('@')) {
       const cpf = identifier.replace(/\D/g, '');
-      const rows = await database().$queryRaw<Array<{ email: string }>>`
-        select email from concloud."OpeningLead" where cpf = ${cpf} limit 1`;
-      email = rows[0]?.email ?? 'acesso-invalido@example.invalid';
+      email = (await openingEmailByCpf(cpf)) ?? 'acesso-invalido@example.invalid';
     }
     const client = await supabase();
     const { error } = await client.auth.signInWithPassword({ email, password });
