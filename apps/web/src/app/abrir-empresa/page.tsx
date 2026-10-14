@@ -184,14 +184,19 @@ export default function OpenCompany() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ ...lead, draftToken }),
       });
-      const result = (await response.json()) as { id?: string };
-      if (!response.ok || !result.id) throw new Error();
+      const result = (await response.json()) as { id?: string; error?: string };
+      if (!response.ok || !result.id)
+        throw new Error(result.error || 'Não foi possível criar seu cadastro agora.');
       window.location.assign(
         `/pagamento?cadastro=${encodeURIComponent(result.id)}&plano=${lead.plan}`,
       );
-    } catch {
+    } catch (error) {
       setSending(false);
-      setError('Não foi possível criar seu cadastro agora. Revise os dados e tente novamente.');
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível criar seu cadastro agora. Revise os dados e tente novamente.',
+      );
     }
   }
 
