@@ -32,7 +32,7 @@ body {
   overflow: hidden;
 }
 .marketing-header {
-  height: 86px;
+  height: 104px;
   max-width: 1240px;
   padding: 0 24px;
   margin: auto;
@@ -44,8 +44,8 @@ body {
 .marketing-brand {
   display: flex;
   align-items: center;
-  width: 215px;
-  height: 72px;
+  width: 280px;
+  height: 94px;
 }
 .brand-logo {
   display: block;
@@ -1551,12 +1551,12 @@ body {
 }
 @media (max-width: 560px) {
   .marketing-header {
-    height: 74px;
+    height: 82px;
     padding: 0 16px;
   }
   .marketing-brand {
-    width: 180px;
-    height: 60px;
+    width: 210px;
+    height: 70px;
   }
   .marketing-cta.small {
     padding: 0 12px;
