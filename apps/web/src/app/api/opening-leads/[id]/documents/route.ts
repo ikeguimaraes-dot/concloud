@@ -63,9 +63,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return Response.json({ error: 'Cadastro não autorizado.' }, { status: 404 });
 
     const form = await request.formData();
+    const shouldFinalize = form.get('finalize') === 'true';
     for (const kind of kinds) {
       const value = form.get(kind);
       if (!(value instanceof File) || value.size === 0) continue;
+      if (value.size > 4 * 1024 * 1024)
+        return Response.json(
+          { error: `${value.name}: envie um arquivo de até 4 MB.` },
+          { status: 400 },
+        );
       const bytes = new Uint8Array(await value.arrayBuffer());
       validateUpload(bytes, value.type);
       const objectKey = `opening-leads/${id}/${kind}/${crypto.randomUUID()}`;
@@ -79,11 +85,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const rows = await status(id, actor.id);
     const uploaded = new Set(rows.flatMap((row) => (row.kind ? [row.kind] : [])));
-    if (kinds.some((kind) => !uploaded.has(kind)))
+    const complete = kinds.every((kind) => uploaded.has(kind));
+    if (shouldFinalize && !complete)
       return Response.json(
         { error: 'Envie todos os documentos antes de finalizar.', uploaded: [...uploaded] },
         { status: 400 },
       );
+    if (!shouldFinalize)
+      return Response.json({ ok: true, uploaded: [...uploaded], submitted: false });
     await database().$executeRaw`
       select concloud.complete_opening_lead_documents(${id}::uuid, ${actor.id}::uuid)`;
     return Response.json({ ok: true, uploaded: [...uploaded], submitted: true });

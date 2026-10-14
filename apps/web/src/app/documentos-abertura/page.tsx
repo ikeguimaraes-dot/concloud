@@ -95,11 +95,29 @@ export default function OpeningDocuments() {
     setSubmitting(true);
     setSubmitError('');
     try {
-      const form = new FormData();
-      documents.forEach((document) => {
+      let uploadedNow = uploaded;
+      for (const document of documents) {
         const file = files[document.id];
-        if (file) form.append(document.id, file);
-      });
+        if (!file) continue;
+        const form = new FormData();
+        form.append(document.id, file);
+        const uploadResponse = await fetch(
+          `/api/opening-leads/${encodeURIComponent(cadastro)}/documents`,
+          { method: 'POST', body: form },
+        );
+        const uploadResult = (await uploadResponse.json()) as {
+          error?: string;
+          uploaded?: string[];
+        };
+        if (uploadResult.uploaded) {
+          uploadedNow = uploadResult.uploaded;
+          setUploaded(uploadResult.uploaded);
+        }
+        if (!uploadResponse.ok)
+          throw new Error(uploadResult.error ?? `Não foi possível enviar ${document.label}.`);
+      }
+      const form = new FormData();
+      form.append('finalize', 'true');
       const response = await fetch(`/api/opening-leads/${encodeURIComponent(cadastro)}/documents`, {
         method: 'POST',
         body: form,
@@ -110,6 +128,7 @@ export default function OpeningDocuments() {
         submitted?: boolean;
       };
       if (result.uploaded) setUploaded(result.uploaded);
+      else setUploaded(uploadedNow);
       if (!response.ok) throw new Error(result.error ?? 'Não foi possível enviar os documentos.');
       setSubmitted(Boolean(result.submitted));
       setFiles({});
