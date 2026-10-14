@@ -32,7 +32,7 @@ body {
   overflow: hidden;
 }
 .marketing-header {
-  height: 78px;
+  height: 86px;
   max-width: 1240px;
   padding: 0 24px;
   margin: auto;
@@ -44,8 +44,8 @@ body {
 .marketing-brand {
   display: flex;
   align-items: center;
-  width: 190px;
-  height: 64px;
+  width: 215px;
+  height: 72px;
 }
 .brand-logo {
   display: block;
@@ -1551,12 +1551,12 @@ body {
 }
 @media (max-width: 560px) {
   .marketing-header {
-    height: 68px;
+    height: 74px;
     padding: 0 16px;
   }
   .marketing-brand {
-    width: 155px;
-    height: 52px;
+    width: 180px;
+    height: 60px;
   }
   .marketing-cta.small {
     padding: 0 12px;
@@ -1737,8 +1737,8 @@ small {
 .brand {
   display: flex;
   align-items: center;
-  width: 190px;
-  height: 64px;
+  width: 215px;
+  height: 72px;
 }
 .workspace-label {
   font-size: 9px;
@@ -2771,8 +2771,8 @@ footer {
     display: block;
   }
   .sidebar .brand {
-    width: 170px;
-    height: 57px;
+    width: 195px;
+    height: 65px;
   }
   .workspace-label,
   .company-switch,
