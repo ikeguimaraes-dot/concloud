@@ -1,23 +1,142 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Building2, ArrowUpRight, Plus, FolderCheck } from 'lucide-react';
+import { Building2, ArrowUpRight, Plus, FolderCheck, Clock3, FileCheck2 } from 'lucide-react';
 import { requireActor } from '@/lib/auth';
 import { companies, officeOperations } from '@/lib/service';
 import { Shell } from '@/components/shell';
 import { ActionForm } from '@/components/forms';
 import { Field, Select, Panel, Empty } from '@/components/fields';
-import { openingResumeForUser } from '@/lib/opening-resume';
+import { openingProfileForUser } from '@/lib/opening-resume';
+import { notifyOpeningDocumentsSubmitted } from '@/lib/opening-notification';
+
+const documentLabels: Record<string, string> = {
+  identidade: 'CNH ou RG do sócio',
+  titulo: 'Título de Eleitor do sócio',
+  'estado-civil': 'Comprovante de estado civil',
+  'endereco-socio': 'Comprovante de endereço residencial',
+  iptu: 'Capa do IPTU',
+  'endereco-empresa': 'Comprovante de endereço do empreendimento',
+};
+
+const fileSize = (bytes: number) => `${Math.max(1, Math.round(bytes / 1024))} KB`;
 export const dynamic = 'force-dynamic';
 export default async function Office() {
   const actor = await requireActor();
   const data = await companies(actor);
+  let opening = null;
   if (!data.companies.length) {
-    const opening = await openingResumeForUser(actor.id);
-    if (opening)
+    opening = await openingProfileForUser(actor.id);
+    if (opening && !opening.documentsSubmittedAt)
       redirect(
         opening.paymentStatus === 'PAID'
           ? `/documentos-abertura?cadastro=${encodeURIComponent(opening.id)}`
           : `/pagamento?cadastro=${encodeURIComponent(opening.id)}&plano=${encodeURIComponent(opening.plan)}`,
+      );
+  }
+  if (opening?.documentsSubmittedAt) {
+    try {
+      opening = await notifyOpeningDocumentsSubmitted(actor.id);
+    } catch (error) {
+      console.error(
+        JSON.stringify({
+          event: 'opening.documents.notification_retry_failed',
+          leadId: opening.id,
+          errorType: error instanceof Error ? error.constructor.name : typeof error,
+        }),
+      );
+    }
+    if (opening)
+      return (
+        <Shell email={actor.email}>
+          <div className="page-heading">
+            <div>
+              <span className="eyebrow">PERFIL DA SUA EMPRESA</span>
+              <h1>
+                Abertura em andamento<span className="title-dot">.</span>
+              </h1>
+              <p>Acompanhe aqui o cadastro e os documentos enviados.</p>
+            </div>
+            <span className="badge opening-review-badge">
+              <Clock3 size={14} /> Em análise
+            </span>
+          </div>
+          <div className="welcome-strip opening-review-strip">
+            <div className="welcome-icon">
+              <FileCheck2 size={28} />
+            </div>
+            <div>
+              <h2>Seus documentos estão sendo analisados.</h2>
+              <p>
+                Recebemos tudo corretamente. Retornaremos em breve com a resposta e os próximos
+                passos.
+              </p>
+            </div>
+          </div>
+          <div className="opening-profile-grid">
+            <Panel
+              title="Dados do cadastro"
+              description="Informações usadas na abertura da empresa."
+            >
+              <dl className="opening-profile-data">
+                <div>
+                  <dt>Nome</dt>
+                  <dd>{opening.name}</dd>
+                </div>
+                <div>
+                  <dt>CPF</dt>
+                  <dd>{opening.cpf}</dd>
+                </div>
+                <div>
+                  <dt>E-mail</dt>
+                  <dd>{opening.email}</dd>
+                </div>
+                <div>
+                  <dt>Celular</dt>
+                  <dd>{opening.phone}</dd>
+                </div>
+                <div>
+                  <dt>Atividade</dt>
+                  <dd>{opening.activity}</dd>
+                </div>
+                <div>
+                  <dt>Localidade</dt>
+                  <dd>
+                    {opening.city}/{opening.state}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Plano</dt>
+                  <dd>{opening.plan}</dd>
+                </div>
+                <div>
+                  <dt>Pagamento</dt>
+                  <dd>Confirmado</dd>
+                </div>
+              </dl>
+            </Panel>
+            <Panel
+              title="Documentos enviados"
+              description={`${opening.documents.length} arquivos recebidos`}
+            >
+              <div className="opening-document-list">
+                {opening.documents.map((document) => (
+                  <div className="opening-document-item" key={document.kind}>
+                    <span>
+                      <FileCheck2 size={18} />
+                    </span>
+                    <div>
+                      <strong>{documentLabels[document.kind] ?? document.kind}</strong>
+                      <small>
+                        {document.filename} · {fileSize(document.size)}
+                      </small>
+                    </div>
+                    <em>Recebido</em>
+                  </div>
+                ))}
+              </div>
+            </Panel>
+          </div>
+        </Shell>
       );
   }
   const operations = await officeOperations(actor);

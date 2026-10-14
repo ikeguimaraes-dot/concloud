@@ -1415,6 +1415,85 @@ body {
 .upload-disclaimer svg {
   width: 14px;
 }
+.opening-review-badge {
+  color: #b54708;
+  background: #fff4e8;
+  border-color: #ffd3ad;
+}
+.opening-review-strip {
+  border-color: #ffd3ad;
+  background: linear-gradient(110deg, #fff8f3, #fff);
+}
+.opening-profile-grid {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 20px;
+}
+.opening-profile-data {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  margin: 0;
+}
+.opening-profile-data div {
+  padding: 13px 0;
+  border-bottom: 1px solid #edf0f4;
+}
+.opening-profile-data dt {
+  color: #7a8597;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.opening-profile-data dd {
+  margin: 5px 0 0;
+  color: #172842;
+  font-size: 13px;
+  font-weight: 700;
+}
+.opening-document-list {
+  display: flex;
+  flex-direction: column;
+}
+.opening-document-item {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  gap: 11px;
+  align-items: center;
+  padding: 13px 0;
+  border-bottom: 1px solid #edf0f4;
+}
+.opening-document-item > span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: #14995c;
+  background: #e7faf1;
+}
+.opening-document-item div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.opening-document-item strong {
+  font-size: 12px;
+}
+.opening-document-item small {
+  color: #7a8597;
+  font-size: 10px;
+}
+.opening-document-item em {
+  color: #14995c;
+  background: #e7faf1;
+  padding: 5px 8px;
+  border-radius: 20px;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+  text-transform: uppercase;
+}
 .opening-info {
   display: flex;
   flex-direction: column;
@@ -2788,6 +2867,17 @@ footer {
   }
 }
 @media (max-width: 760px) {
+  .opening-profile-grid,
+  .opening-profile-data {
+    grid-template-columns: 1fr;
+  }
+  .opening-document-item {
+    grid-template-columns: 34px 1fr;
+  }
+  .opening-document-item em {
+    grid-column: 2;
+    justify-self: start;
+  }
   .sidebar {
     position: relative;
     width: 100%;

@@ -3,6 +3,7 @@ import { database } from '@database/client';
 import { bucket, putObject, validateUpload } from '@integrations/storage';
 import { currentActor } from '@/lib/auth';
 import { rateLimit } from '@/lib/limits';
+import { notifyOpeningDocumentsSubmitted } from '@/lib/opening-notification';
 
 const kinds = [
   'identidade',
@@ -95,6 +96,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return Response.json({ ok: true, uploaded: [...uploaded], submitted: false });
     await database().$executeRaw`
       select concloud.complete_opening_lead_documents(${id}::uuid, ${actor.id}::uuid)`;
+    try {
+      await notifyOpeningDocumentsSubmitted(actor.id);
+    } catch (error) {
+      console.error(
+        JSON.stringify({
+          event: 'opening.documents.notification_failed',
+          leadId: id,
+          errorType: error instanceof Error ? error.constructor.name : typeof error,
+        }),
+      );
+    }
     return Response.json({ ok: true, uploaded: [...uploaded], submitted: true });
   } catch (error) {
     const unauthorized = error instanceof Error && error.message === 'UNAUTHORIZED';
