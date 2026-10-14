@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import {
-  Cloud,
   LayoutDashboard,
   Building2,
   Wallet,
@@ -18,6 +17,7 @@ import {
 import type { ReactNode } from 'react';
 import { logout, demoPersona } from '@/lib/actions';
 import { demoEnabled } from '@/lib/auth';
+import { BrandLogo } from '@/components/brand-logo';
 const nav = [
   ['', 'Visão geral', LayoutDashboard],
   ['empresa', 'Minha empresa', Building2],
@@ -48,10 +48,7 @@ export function Shell({
     <div className="app-shell">
       <aside className="sidebar">
         <Link className="brand" href="/escritorio">
-          <span className="brand-mark">
-            <Cloud size={25} />
-          </span>
-          concloud<span className="brand-dot">.</span>
+          <BrandLogo />
         </Link>
         <div className="workspace-label">
           {staff ? 'AMBIENTE DO ESCRITÓRIO' : 'PORTAL DO CLIENTE'}

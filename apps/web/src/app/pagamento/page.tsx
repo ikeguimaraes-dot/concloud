@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { Check, Cloud, CreditCard, LockKeyhole, ShieldCheck } from 'lucide-react';
+import { Check, CreditCard, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { CheckoutButton } from './checkout-button';
+import { BrandLogo } from '@/components/brand-logo';
 
 const plans: Record<string, { name: string; price: string }> = {
   essencial: { name: 'Essencial', price: 'R$ 99/mês' },
@@ -20,10 +21,7 @@ export default async function Payment({
     <main className="opening-page checkout-page">
       <header className="opening-header">
         <Link className="marketing-brand" href="/">
-          <span>
-            <Cloud />
-          </span>
-          ConCloud<i>.</i>
+          <BrandLogo />
         </Link>
         <span>Checkout seguro</span>
       </header>

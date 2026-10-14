@@ -6,7 +6,6 @@ import {
   ArrowRight,
   Building2,
   Check,
-  Cloud,
   CreditCard,
   Eye,
   EyeOff,
@@ -16,6 +15,7 @@ import {
   ShieldCheck,
   UserRound,
 } from 'lucide-react';
+import { BrandLogo } from '@/components/brand-logo';
 
 type Lead = {
   name: string;
@@ -199,10 +199,7 @@ export default function OpenCompany() {
     <main className="opening-page">
       <header className="opening-header">
         <Link className="marketing-brand" href="/">
-          <span>
-            <Cloud />
-          </span>
-          ConCloud<i>.</i>
+          <BrandLogo />
         </Link>
         <Link href="/login">Já sou cliente</Link>
       </header>

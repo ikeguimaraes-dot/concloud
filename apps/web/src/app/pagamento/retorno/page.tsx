@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Clock3, Cloud, ShieldCheck } from 'lucide-react';
+import { Clock3, ShieldCheck } from 'lucide-react';
+import { BrandLogo } from '@/components/brand-logo';
 
 export default async function PaymentReturn({
   searchParams,
@@ -11,10 +12,7 @@ export default async function PaymentReturn({
     <main className="opening-page checkout-page">
       <header className="opening-header">
         <Link className="marketing-brand" href="/">
-          <span>
-            <Cloud />
-          </span>
-          ConCloud<i>.</i>
+          <BrandLogo />
         </Link>
         <span>Retorno do pagamento</span>
       </header>

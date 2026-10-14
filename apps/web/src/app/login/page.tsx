@@ -1,7 +1,8 @@
 export const dynamic = 'force-dynamic';
 import Link from 'next/link';
-import { Cloud, ArrowUpRight, Check } from 'lucide-react';
+import { ArrowUpRight, Check } from 'lucide-react';
 import { ActionForm } from '@/components/forms';
+import { BrandLogo } from '@/components/brand-logo';
 import { Field } from '@/components/fields';
 import { login } from '@/lib/actions';
 import { authConfigured, demoEnabled } from '@/lib/auth';
@@ -10,10 +11,7 @@ export default function Login() {
     <div className="login-page">
       <section className="login-story">
         <Link className="brand" href="/">
-          <span className="brand-mark">
-            <Cloud />
-          </span>
-          concloud.
+          <BrandLogo />
         </Link>
         <div className="login-copy">
           <span className="eyebrow">MAIS CLAREZA. NOVAS POSSIBILIDADES.</span>

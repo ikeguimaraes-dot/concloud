@@ -5,7 +5,6 @@ import {
   Check,
   ChevronDown,
   Clock3,
-  Cloud,
   FileCheck2,
   FileUp,
   Info,
@@ -14,6 +13,7 @@ import {
   ShieldCheck,
   Users,
 } from 'lucide-react';
+import { BrandLogo } from '@/components/brand-logo';
 
 const documents = [
   {
@@ -73,10 +73,7 @@ export default function OpeningDocuments() {
       <main className="opening-page checkout-page">
         <header className="opening-header">
           <Link className="marketing-brand" href="/">
-            <span>
-              <Cloud />
-            </span>
-            ConCloud<i>.</i>
+            <BrandLogo />
           </Link>
           <span>
             <ShieldCheck /> Ambiente seguro
@@ -130,10 +127,7 @@ export default function OpeningDocuments() {
     <main className="documents-page">
       <header className="opening-header">
         <Link className="marketing-brand" href="/">
-          <span>
-            <Cloud />
-          </span>
-          ConCloud<i>.</i>
+          <BrandLogo />
         </Link>
         <span>
           <ShieldCheck /> Ambiente seguro

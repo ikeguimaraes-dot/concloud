@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react';
+import { BrandLogo } from '@/components/brand-logo';
 
 const benefits = [
   {
@@ -60,10 +61,7 @@ export default function Home() {
     <main className="marketing-page">
       <header className="marketing-header">
         <Link className="marketing-brand" href="/" aria-label="ConCloud, início">
-          <span>
-            <Cloud size={25} />
-          </span>
-          ConCloud<i>.</i>
+          <BrandLogo />
         </Link>
         <nav aria-label="Navegação principal">
           <a href="#solucoes">Soluções</a>
@@ -121,7 +119,7 @@ export default function Home() {
           <div className="hero-dashboard">
             <div className="mock-top">
               <span className="mock-logo">
-                <Cloud /> ConCloud
+                <BrandLogo />
               </span>
               <span>Olá, Ricardo</span>
             </div>
@@ -372,10 +370,7 @@ export default function Home() {
         <div className="footer-main">
           <div>
             <Link className="marketing-brand inverse" href="/">
-              <span>
-                <Cloud />
-              </span>
-              ConCloud<i>.</i>
+              <BrandLogo />
             </Link>
             <p>Contabilidade digital com proximidade, organização e tecnologia.</p>
           </div>

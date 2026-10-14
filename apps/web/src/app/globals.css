@@ -44,23 +44,28 @@ body {
 .marketing-brand {
   display: flex;
   align-items: center;
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: -1.1px;
+  width: 190px;
+  height: 48px;
 }
-.marketing-brand > span {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 11px;
-  background: #ff5a00;
-  color: white;
-  margin-right: 8px;
+.brand-logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
 }
-.marketing-brand i {
-  color: #ff5a00;
-  font-style: normal;
+.brand-logo > img {
+  position: absolute;
+  width: 124%;
+  max-width: none;
+  height: auto;
+  left: -8%;
+  top: -26%;
+}
+.brand-logo.compact > img {
+  width: 475%;
+  left: -31%;
+  top: -27%;
 }
 .marketing-header nav {
   display: flex;
@@ -228,6 +233,11 @@ body {
 }
 .mock-logo svg {
   width: 18px;
+}
+.mock-logo .brand-logo {
+  display: block;
+  width: 92px;
+  height: 25px;
 }
 .mock-body {
   display: grid;
@@ -699,9 +709,12 @@ body {
   grid-template-columns: 1.6fr repeat(3, 1fr);
   gap: 50px;
 }
-.marketing-brand.inverse > span {
+.marketing-brand.inverse {
   background: #fff;
-  color: #ff5a00;
+  border-radius: 12px;
+  padding: 4px 10px;
+  width: 205px;
+  height: 56px;
 }
 .footer-main > div {
   display: flex;
@@ -1548,11 +1561,8 @@ body {
     padding: 0 16px;
   }
   .marketing-brand {
-    font-size: 20px;
-  }
-  .marketing-brand > span {
-    width: 30px;
-    height: 30px;
+    width: 155px;
+    height: 40px;
   }
   .marketing-cta.small {
     padding: 0 12px;
@@ -1733,23 +1743,8 @@ small {
 .brand {
   display: flex;
   align-items: center;
-  gap: 9px;
-  font-size: 28px;
-  font-weight: 760;
-  letter-spacing: -1.4px;
-}
-.brand-mark {
-  display: grid;
-  place-items: center;
-  background: #5668e7;
-  color: #fff;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-}
-.brand-dot {
-  color: var(--primary);
-  margin-left: -9px;
+  width: 190px;
+  height: 48px;
 }
 .workspace-label {
   font-size: 9px;
@@ -2782,11 +2777,8 @@ footer {
     display: block;
   }
   .sidebar .brand {
-    font-size: 24px;
-  }
-  .sidebar .brand-mark {
-    height: 32px;
-    width: 32px;
+    width: 170px;
+    height: 42px;
   }
   .workspace-label,
   .company-switch,
