@@ -1147,6 +1147,26 @@ body {
 .payment-cta {
   background: #16864f !important;
 }
+.checkout-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.checkout-actions.with-test {
+  grid-template-columns: 1fr 1fr;
+}
+.test-payment-cta {
+  background: #fff !important;
+  color: #ff5a00 !important;
+  border: 1px dashed #ff5a00 !important;
+  box-shadow: none !important;
+}
+.test-payment-note {
+  display: block;
+  margin-top: 9px;
+  color: #9a5b32;
+  font-size: 11px;
+}
 .secure-footer {
   margin-top: 15px;
 }
@@ -1653,6 +1673,9 @@ body {
   }
   .checkout-shell {
     padding: 30px 24px;
+  }
+  .checkout-actions.with-test {
+    grid-template-columns: 1fr;
   }
   .review dl div {
     grid-template-columns: 1fr;

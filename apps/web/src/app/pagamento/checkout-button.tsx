@@ -1,10 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight, BadgeCheck, Loader2 } from 'lucide-react';
 
-export function CheckoutButton({ cadastro }: { cadastro: string }) {
+export function CheckoutButton({
+  cadastro,
+  testPaymentEnabled,
+}: {
+  cadastro: string;
+  testPaymentEnabled: boolean;
+}) {
   const [loading, setLoading] = useState(false);
+  const [testLoading, setTestLoading] = useState(false);
   const [error, setError] = useState('');
 
   async function checkout() {
@@ -30,16 +37,53 @@ export function CheckoutButton({ cadastro }: { cadastro: string }) {
     }
   }
 
+  async function confirmTestPayment() {
+    setTestLoading(true);
+    setError('');
+    try {
+      const response = await fetch(
+        `/api/opening-leads/${encodeURIComponent(cadastro)}/test-payment`,
+        { method: 'POST' },
+      );
+      const result = (await response.json()) as { redirect?: string; error?: string };
+      if (!response.ok || !result.redirect)
+        throw new Error(result.error || 'Não foi possível confirmar o pagamento de teste.');
+      window.location.assign(result.redirect);
+    } catch (error) {
+      setTestLoading(false);
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível confirmar o pagamento de teste.',
+      );
+    }
+  }
+
   return (
     <>
-      <button
-        className="marketing-cta payment-cta full"
-        type="button"
-        disabled={loading || !cadastro}
-        onClick={checkout}
-      >
-        {loading ? <Loader2 className="spin" /> : 'Pagar com PagBank'} <ArrowRight />
-      </button>
+      <div className={`checkout-actions${testPaymentEnabled ? ' with-test' : ''}`}>
+        <button
+          className="marketing-cta payment-cta full"
+          type="button"
+          disabled={loading || testLoading || !cadastro}
+          onClick={checkout}
+        >
+          {loading ? <Loader2 className="spin" /> : 'Pagar com PagBank'} <ArrowRight />
+        </button>
+        {testPaymentEnabled && (
+          <button
+            className="marketing-cta test-payment-cta full"
+            type="button"
+            disabled={loading || testLoading}
+            onClick={confirmTestPayment}
+          >
+            {testLoading ? <Loader2 className="spin" /> : <BadgeCheck />} Marcar como pago
+          </button>
+        )}
+      </div>
+      {testPaymentEnabled && (
+        <small className="test-payment-note">Atalho temporário de homologação — sem cobrança.</small>
+      )}
       {error && <p className="form-error">{error}</p>}
     </>
   );

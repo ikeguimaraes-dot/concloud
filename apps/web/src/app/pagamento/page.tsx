@@ -16,6 +16,8 @@ export default async function Payment({
 }) {
   const { cadastro = '', plano = 'essencial' } = await searchParams;
   const selected = plans[plano] ?? plans.essencial;
+  const testPaymentEnabled =
+    !!cadastro && cadastro === process.env.PAYMENT_TEST_LEAD_ID;
 
   return (
     <main className="opening-page checkout-page">
@@ -51,7 +53,7 @@ export default async function Payment({
             <Check /> Documentos enviados somente após o pagamento
           </span>
         </div>
-        <CheckoutButton cadastro={cadastro} />
+        <CheckoutButton cadastro={cadastro} testPaymentEnabled={testPaymentEnabled} />
         <div className="payment-trust">
           <ShieldCheck /> Pagamento processado pelo PagSeguro <span>·</span> <LockKeyhole /> A
           ConCloud não armazena dados do cartão
