@@ -67,12 +67,24 @@ export async function POST(request: Request) {
       }
       authUserId = data.user?.id ?? null;
     }
-    const rows = await database().$queryRaw<Array<{ id: string }>>`
-      select concloud.submit_opening_lead(
-        ${input.name}, ${input.cpf}, ${input.email.toLowerCase()}, ${input.phone},
-        ${input.activity}, ${input.zipCode}, ${input.addressType}, ${input.city},
-        ${input.state}, ${input.plan}, ${authUserId}::uuid, ${openingDraftHash(input.draftToken)}
-      ) as id`;
+    const [capability] = await database().$queryRaw<Array<{ draftAware: boolean }>>`
+      select to_regprocedure(
+        'concloud.submit_opening_lead(text,text,text,text,text,text,text,text,text,text,uuid,text)'
+      ) is not null as "draftAware"`;
+    const rows = capability?.draftAware
+      ? await database().$queryRaw<Array<{ id: string }>>`
+          select concloud.submit_opening_lead(
+            ${input.name}, ${input.cpf}, ${input.email.toLowerCase()}, ${input.phone},
+            ${input.activity}, ${input.zipCode}, ${input.addressType}, ${input.city},
+            ${input.state}, ${input.plan}, ${authUserId}::uuid,
+            ${openingDraftHash(input.draftToken)}
+          ) as id`
+      : await database().$queryRaw<Array<{ id: string }>>`
+          select concloud.submit_opening_lead(
+            ${input.name}, ${input.cpf}, ${input.email.toLowerCase()}, ${input.phone},
+            ${input.activity}, ${input.zipCode}, ${input.addressType}, ${input.city},
+            ${input.state}, ${input.plan}, ${authUserId}::uuid
+          ) as id`;
     return Response.json({ ok: true, id: rows[0]?.id }, { status: 201 });
   } catch (error) {
     if (auth && authUserId) await auth.auth.admin.deleteUser(authUserId).catch(() => undefined);

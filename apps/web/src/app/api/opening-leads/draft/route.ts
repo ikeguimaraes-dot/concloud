@@ -32,6 +32,17 @@ export async function POST(request: Request) {
   try {
     const input = schema.parse(await request.json());
     await rateLimit(`opening-draft:${input.cpf}`, 20);
+
+    const [capability] = await database().$queryRaw<Array<{ available: boolean }>>`
+      select to_regprocedure(
+        'concloud.save_opening_lead_draft(text,text,text,text,text,integer,text,text,text,text,text,text,boolean)'
+      ) is not null as available`;
+
+    // Keep the opening flow usable while the additive draft migration is being rolled out.
+    // The final submission still persists every field through the legacy function.
+    if (!capability?.available)
+      return Response.json({ ok: true, persisted: false }, { status: 202 });
+
     const rows = await database().$queryRaw<Array<{ id: string }>>`
       select concloud.save_opening_lead_draft(
         ${openingDraftHash(input.draftToken)}, ${input.name}, ${input.cpf},
@@ -39,7 +50,7 @@ export async function POST(request: Request) {
         ${input.zipCode}, ${input.addressType}, ${input.city}, ${input.state}, ${input.plan},
         ${input.marketingConsent}
       ) as id`;
-    return Response.json({ ok: true, id: rows[0]?.id });
+    return Response.json({ ok: true, persisted: true, id: rows[0]?.id });
   } catch (error) {
     console.error(
       JSON.stringify({
