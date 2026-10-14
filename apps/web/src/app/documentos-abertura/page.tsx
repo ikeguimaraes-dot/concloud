@@ -43,6 +43,20 @@ const documents = [
     hint: 'Conta ou documento atual do imóvel.',
   },
 ];
+const maxFileBytes = 4 * 1024 * 1024;
+
+async function responseJson<T>(response: Response): Promise<T> {
+  const body = await response.text();
+  try {
+    return JSON.parse(body) as T;
+  } catch {
+    throw new Error(
+      response.status === 413 || body.startsWith('Request Ent')
+        ? 'Um dos arquivos é muito grande. Envie arquivos de até 4 MB cada.'
+        : 'O servidor não conseguiu processar o envio. Tente novamente.',
+    );
+  }
+}
 
 export default function OpeningDocuments() {
   const [files, setFiles] = useState<Record<string, File | undefined>>({});
@@ -95,6 +109,8 @@ export default function OpeningDocuments() {
     setSubmitting(true);
     setSubmitError('');
     try {
+      const oversized = Object.values(files).find((file) => file && file.size > maxFileBytes);
+      if (oversized) throw new Error(`${oversized.name}: envie um arquivo de até 4 MB.`);
       let uploadedNow = uploaded;
       for (const document of documents) {
         const file = files[document.id];
@@ -105,10 +121,10 @@ export default function OpeningDocuments() {
           `/api/opening-leads/${encodeURIComponent(cadastro)}/documents`,
           { method: 'POST', body: form },
         );
-        const uploadResult = (await uploadResponse.json()) as {
+        const uploadResult = await responseJson<{
           error?: string;
           uploaded?: string[];
-        };
+        }>(uploadResponse);
         if (uploadResult.uploaded) {
           uploadedNow = uploadResult.uploaded;
           setUploaded(uploadResult.uploaded);
@@ -122,11 +138,11 @@ export default function OpeningDocuments() {
         method: 'POST',
         body: form,
       });
-      const result = (await response.json()) as {
+      const result = await responseJson<{
         error?: string;
         uploaded?: string[];
         submitted?: boolean;
-      };
+      }>(response);
       if (result.uploaded) setUploaded(result.uploaded);
       else setUploaded(uploadedNow);
       if (!response.ok) throw new Error(result.error ?? 'Não foi possível enviar os documentos.');
@@ -253,7 +269,7 @@ export default function OpeningDocuments() {
               <FileCheck2 />
               <span>
                 <b>Documentos necessários</b>
-                <small>Formatos aceitos: PDF, JPG ou PNG</small>
+                <small>Formatos aceitos: PDF, JPG ou PNG · até 4 MB cada</small>
               </span>
             </div>
             <em>OBRIGATÓRIO</em>
@@ -281,9 +297,16 @@ export default function OpeningDocuments() {
                     disabled={submitting}
                     onChange={(event) => {
                       setSubmitError('');
+                      const file = event.target.files?.[0];
+                      if (file && file.size > maxFileBytes) {
+                        setSubmitError(`${file.name}: envie um arquivo de até 4 MB.`);
+                        event.target.value = '';
+                        setFiles((current) => ({ ...current, [document.id]: undefined }));
+                        return;
+                      }
                       setFiles((current) => ({
                         ...current,
-                        [document.id]: event.target.files?.[0],
+                        [document.id]: file,
                       }));
                     }}
                   />
