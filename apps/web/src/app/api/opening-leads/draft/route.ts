@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { database } from '@database/client';
+import { AppError } from '@domain/errors';
 import { rateLimit } from '@/lib/limits';
 import { openingDraftHash } from '@/lib/opening-draft';
 
@@ -52,15 +53,32 @@ export async function POST(request: Request) {
       ) as id`;
     return Response.json({ ok: true, persisted: true, id: rows[0]?.id });
   } catch (error) {
+    const validationError = error instanceof z.ZodError;
+    const rateLimitError = error instanceof AppError && error.code === 'RATE_LIMIT';
+    const databaseCode =
+      error && typeof error === 'object' && 'code' in error && typeof error.code === 'string'
+        ? error.code
+        : undefined;
     console.error(
       JSON.stringify({
         event: 'opening.draft.failed',
-        code: error instanceof z.ZodError ? 'INVALID_INPUT' : 'DATABASE_ERROR',
+        code: validationError
+          ? 'INVALID_INPUT'
+          : rateLimitError
+            ? 'RATE_LIMIT'
+            : (databaseCode ?? 'DATABASE_ERROR'),
       }),
     );
+
+    if (!validationError && !rateLimitError)
+      return Response.json({ ok: true, persisted: false }, { status: 202 });
+
     return Response.json(
-      { ok: false, error: 'Não foi possível salvar seu progresso.' },
-      { status: 400 },
+      {
+        ok: false,
+        error: rateLimitError ? error.message : 'Revise os dados informados.',
+      },
+      { status: rateLimitError ? error.status : 400 },
     );
   }
 }
