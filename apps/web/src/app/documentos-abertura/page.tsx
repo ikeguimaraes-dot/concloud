@@ -46,15 +46,22 @@ const documents = [
 
 export default function OpeningDocuments() {
   const [files, setFiles] = useState<Record<string, File | undefined>>({});
+  const [uploaded, setUploaded] = useState<string[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [payment, setPayment] = useState<'checking' | 'paid' | 'pending' | 'invalid'>('checking');
   const cadastro =
     typeof window === 'undefined'
       ? ''
       : (new URLSearchParams(window.location.search).get('cadastro') ?? '');
-  const complete = useMemo(
-    () => documents.filter((document) => files[document.id]).length,
-    [files],
-  );
+  const complete = useMemo(() => {
+    const ready = new Set(uploaded);
+    documents.forEach((document) => {
+      if (files[document.id]) ready.add(document.id);
+    });
+    return documents.filter((document) => ready.has(document.id)).length;
+  }, [files, uploaded]);
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get('cadastro') ?? '';
     const endpoint = id
@@ -63,10 +70,57 @@ export default function OpeningDocuments() {
     fetch(endpoint, { cache: 'no-store' })
       .then(async (response) => {
         const result = (await response.json()) as { paid?: boolean };
-        setPayment(response.ok && result.paid ? 'paid' : response.ok ? 'pending' : 'invalid');
+        const next = response.ok && result.paid ? 'paid' : response.ok ? 'pending' : 'invalid';
+        setPayment(next);
+        if (next === 'paid' && id) {
+          fetch(`/api/opening-leads/${encodeURIComponent(id)}/documents`, { cache: 'no-store' })
+            .then(async (documentsResponse) => {
+              const documentsResult = (await documentsResponse.json()) as {
+                uploaded?: string[];
+                submitted?: boolean;
+              };
+              if (documentsResponse.ok) {
+                setUploaded(documentsResult.uploaded ?? []);
+                setSubmitted(Boolean(documentsResult.submitted));
+              }
+            })
+            .catch(() => undefined);
+        }
       })
       .catch(() => setPayment('invalid'));
   }, []);
+
+  async function finalizeDocuments() {
+    if (!cadastro || submitting) return;
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      const form = new FormData();
+      documents.forEach((document) => {
+        const file = files[document.id];
+        if (file) form.append(document.id, file);
+      });
+      const response = await fetch(`/api/opening-leads/${encodeURIComponent(cadastro)}/documents`, {
+        method: 'POST',
+        body: form,
+      });
+      const result = (await response.json()) as {
+        error?: string;
+        uploaded?: string[];
+        submitted?: boolean;
+      };
+      if (result.uploaded) setUploaded(result.uploaded);
+      if (!response.ok) throw new Error(result.error ?? 'Não foi possível enviar os documentos.');
+      setSubmitted(Boolean(result.submitted));
+      setFiles({});
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : 'Não foi possível enviar os documentos.',
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   if (payment !== 'paid')
     return (
@@ -123,6 +177,33 @@ export default function OpeningDocuments() {
         </div>
       </main>
     );
+  if (submitted)
+    return (
+      <main className="opening-page checkout-page">
+        <header className="opening-header">
+          <Link className="marketing-brand" href="/">
+            <BrandLogo />
+          </Link>
+          <span>
+            <ShieldCheck /> Ambiente seguro
+          </span>
+        </header>
+        <div className="opening-shell checkout-shell">
+          <div className="step-icon">
+            <FileCheck2 />
+          </div>
+          <span className="marketing-kicker">DOCUMENTOS RECEBIDOS</span>
+          <h1>Envio finalizado com sucesso</h1>
+          <p>
+            Recebemos seus documentos. Nossa equipe vai analisá-los e acompanhar os próximos passos
+            da abertura da sua empresa.
+          </p>
+          <Link className="marketing-cta full" href="/escritorio">
+            Acessar sua empresa
+          </Link>
+        </div>
+      </main>
+    );
   return (
     <main className="documents-page">
       <header className="opening-header">
@@ -159,35 +240,54 @@ export default function OpeningDocuments() {
             <em>OBRIGATÓRIO</em>
           </div>
           <div className="document-list">
-            {documents.map((document) => (
-              <label
-                className={files[document.id] ? 'document-row complete' : 'document-row'}
-                key={document.id}
-              >
-                <span className="document-status">
-                  {files[document.id] ? <Check /> : <FileUp />}
-                </span>
-                <span>
-                  <b>{document.label}</b>
-                  <small>{files[document.id]?.name ?? document.hint}</small>
-                </span>
-                <strong>{files[document.id] ? 'Trocar' : 'Enviar'}</strong>
-                <input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(event) =>
-                    setFiles((current) => ({ ...current, [document.id]: event.target.files?.[0] }))
-                  }
-                />
-              </label>
-            ))}
+            {documents.map((document) => {
+              const isReady = Boolean(files[document.id]) || uploaded.includes(document.id);
+              return (
+                <label
+                  className={isReady ? 'document-row complete' : 'document-row'}
+                  key={document.id}
+                >
+                  <span className="document-status">{isReady ? <Check /> : <FileUp />}</span>
+                  <span>
+                    <b>{document.label}</b>
+                    <small>
+                      {files[document.id]?.name ??
+                        (uploaded.includes(document.id) ? 'Enviado anteriormente' : document.hint)}
+                    </small>
+                  </span>
+                  <strong>{isReady ? 'Trocar' : 'Enviar'}</strong>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    disabled={submitting}
+                    onChange={(event) => {
+                      setSubmitError('');
+                      setFiles((current) => ({
+                        ...current,
+                        [document.id]: event.target.files?.[0],
+                      }));
+                    }}
+                  />
+                </label>
+              );
+            })}
           </div>
+          {submitError && <p className="form-error">{submitError}</p>}
           <button
             className="marketing-cta full"
             type="button"
-            disabled={complete !== documents.length}
+            disabled={complete !== documents.length || submitting}
+            onClick={finalizeDocuments}
           >
-            Finalizar envio <Check />
+            {submitting ? (
+              <>
+                <Loader2 className="spin" /> Enviando documentos...
+              </>
+            ) : (
+              <>
+                Finalizar envio <Check />
+              </>
+            )}
           </button>
           <p className="upload-disclaimer">
             <ShieldCheck /> Seus arquivos serão vinculados ao seu cadastro e tratados apenas para a
