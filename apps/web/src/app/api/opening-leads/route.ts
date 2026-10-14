@@ -33,6 +33,7 @@ const schema = z
 export async function POST(request: Request) {
   let auth: ReturnType<typeof createClient> | null = null;
   let authUserId: string | null = null;
+  let createdAuthUser = false;
   try {
     const input = schema.parse(await request.json());
     await rateLimit(`opening:${input.cpf}`, 3);
@@ -49,23 +50,44 @@ export async function POST(request: Request) {
         user_metadata: { cpf: input.cpf, name: input.name },
       });
       if (error) {
-        console.error(
-          JSON.stringify({
-            event: 'opening.auth.create.failed',
-            code: error.code ?? 'AUTH_CREATE_FAILED',
-            status: error.status,
-          }),
-        );
-        return Response.json(
-          {
-            ok: false,
-            error: 'Não foi possível criar o acesso.',
-            reason: error.code ?? 'AUTH_CREATE_FAILED',
-          },
-          { status: 409 },
-        );
+        if (error.code === 'email_exists') {
+          const { data: existing, error: signInError } = await auth.auth.signInWithPassword({
+            email: input.email.toLowerCase(),
+            password: input.password,
+          });
+          if (!signInError && existing.user) {
+            authUserId = existing.user.id;
+          } else {
+            return Response.json(
+              {
+                ok: false,
+                error: 'Este e-mail já possui acesso. Informe a senha cadastrada.',
+                reason: 'INVALID_EXISTING_PASSWORD',
+              },
+              { status: 409 },
+            );
+          }
+        } else {
+          console.error(
+            JSON.stringify({
+              event: 'opening.auth.create.failed',
+              code: error.code ?? 'AUTH_CREATE_FAILED',
+              status: error.status,
+            }),
+          );
+          return Response.json(
+            {
+              ok: false,
+              error: 'Não foi possível criar o acesso.',
+              reason: error.code ?? 'AUTH_CREATE_FAILED',
+            },
+            { status: 409 },
+          );
+        }
+      } else {
+        authUserId = data.user?.id ?? null;
+        createdAuthUser = !!authUserId;
       }
-      authUserId = data.user?.id ?? null;
     }
     const [capability] = await database().$queryRaw<Array<{ draftAware: boolean }>>`
       select to_regprocedure(
@@ -87,7 +109,8 @@ export async function POST(request: Request) {
           ) as id`;
     return Response.json({ ok: true, id: rows[0]?.id }, { status: 201 });
   } catch (error) {
-    if (auth && authUserId) await auth.auth.admin.deleteUser(authUserId).catch(() => undefined);
+    if (auth && authUserId && createdAuthUser)
+      await auth.auth.admin.deleteUser(authUserId).catch(() => undefined);
     const databaseCode =
       error && typeof error === 'object' && 'code' in error && typeof error.code === 'string'
         ? error.code
