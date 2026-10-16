@@ -43,7 +43,7 @@ export async function GET(request: Request) {
       const rows = pendingAdmin
         .map(
           (lead) =>
-            `<tr><td>${escapeHtml(lead.name)}</td><td>${escapeHtml(lead.email)}</td><td>${escapeHtml(lead.phone)}</td><td>${lead.funnelStep}/4</td></tr>`,
+            `<tr><td>${escapeHtml(lead.name)}</td><td>${escapeHtml(lead.email)}</td><td>${escapeHtml(lead.phone)}</td><td>${lead.funnelStep}/5</td></tr>`,
         )
         .join('');
       const result = await sendTransactionalEmail({
@@ -74,7 +74,7 @@ export async function GET(request: Request) {
           recoveryNumber === 1
             ? 'Seu cadastro da ConCloud ficou quase pronto'
             : 'Podemos ajudar a abrir sua empresa?',
-        html: `<p>Olá, ${escapeHtml(lead.name)}.</p><p>Você parou na etapa ${lead.funnelStep} de 4 da abertura da sua empresa. Seu progresso continua disponível e nossa equipe pode ajudar.</p><p><a href="${appUrl}/abrir-empresa">Continuar abertura</a></p><p style="font-size:12px;color:#64748b">Você recebeu esta mensagem porque autorizou o contato durante o cadastro.</p>`,
+        html: `<p>Olá, ${escapeHtml(lead.name)}.</p><p>Você parou na etapa ${lead.funnelStep} de 5 da abertura da sua empresa. Seu progresso continua disponível e nossa equipe pode ajudar.</p><p><a href="${appUrl}/abrir-empresa">Continuar abertura</a></p><p style="font-size:12px;color:#64748b">Você recebeu esta mensagem porque autorizou o contato durante o cadastro.</p>`,
       });
       if (result.sent) {
         await database()

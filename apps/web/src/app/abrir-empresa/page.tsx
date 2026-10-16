@@ -217,7 +217,9 @@ export default function OpenCompany() {
           password: undefined,
           passwordConfirmation: undefined,
           draftToken,
-          step,
+          // Persist the screen the customer is entering, not the one they just completed.
+          // The legacy draft function stores at most four recoverable funnel stages.
+          step: Math.min(step + 1, 4),
         }),
       });
       if (!response.ok) throw new Error();
