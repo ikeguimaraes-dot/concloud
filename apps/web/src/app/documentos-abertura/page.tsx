@@ -63,7 +63,10 @@ async function responseJson<T>(response: Response): Promise<T> {
 export default function OpeningDocuments() {
   const [files, setFiles] = useState<Record<string, File | undefined>>({});
   const [uploaded, setUploaded] = useState<string[]>([]);
-  const [partners, setPartners] = useState<Partner[]>([]);
+  const [partners, setPartners] = useState<Partner[]>([
+    { name: 'Sócio responsável', cpf: '', percentage: 100 },
+  ]);
+  const [legacyDocuments, setLegacyDocuments] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -77,13 +80,13 @@ export default function OpeningDocuments() {
       ...partners.flatMap((partner, index) =>
         personalDocuments.map((document) => ({
           ...document,
-          id: `socio-${index + 1}-${document.id}`,
+          id: legacyDocuments ? document.id : `socio-${index + 1}-${document.id}`,
           label: `${document.label} — ${partner.name}`,
         })),
       ),
       ...companyDocuments,
     ],
-    [partners],
+    [legacyDocuments, partners],
   );
   const complete = useMemo(() => {
     const ready = new Set(uploaded);
@@ -109,11 +112,17 @@ export default function OpeningDocuments() {
                 uploaded?: string[];
                 submitted?: boolean;
                 partners?: Partner[];
+                legacy?: boolean;
               };
               if (documentsResponse.ok) {
                 setUploaded(documentsResult.uploaded ?? []);
                 setSubmitted(Boolean(documentsResult.submitted));
-                setPartners(documentsResult.partners ?? []);
+                setPartners(
+                  documentsResult.partners?.length
+                    ? documentsResult.partners
+                    : [{ name: 'Sócio responsável', cpf: '', percentage: 100 }],
+                );
+                setLegacyDocuments(documentsResult.legacy ?? true);
               }
             })
             .catch(() => undefined);

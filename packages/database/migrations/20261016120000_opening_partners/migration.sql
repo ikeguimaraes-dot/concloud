@@ -77,8 +77,7 @@ alter table concloud."OpeningLeadDocument" add constraint "OpeningLeadDocument_k
   or kind ~ '^socio-[1-9][0-9]*-(identidade|titulo|estado-civil|endereco-socio)$'
 );
 
-drop function if exists concloud.get_opening_lead_document_status(uuid,uuid);
-create function concloud.get_opening_lead_document_status(
+create function concloud.get_opening_lead_document_context(
   p_lead_id uuid, p_auth_user_id uuid
 ) returns table (kind text, "submittedAt" timestamptz, partners jsonb)
 language sql security definer stable
@@ -140,5 +139,5 @@ $$;
 
 revoke all on function concloud.submit_opening_lead(text,text,text,text,text,text,text,text,text,text,uuid,text,jsonb) from public;
 grant execute on function concloud.submit_opening_lead(text,text,text,text,text,text,text,text,text,text,uuid,text,jsonb) to concloud_runtime;
-revoke all on function concloud.get_opening_lead_document_status(uuid,uuid) from public;
-grant execute on function concloud.get_opening_lead_document_status(uuid,uuid) to concloud_runtime;
+revoke all on function concloud.get_opening_lead_document_context(uuid,uuid) from public;
+grant execute on function concloud.get_opening_lead_document_context(uuid,uuid) to concloud_runtime;

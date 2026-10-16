@@ -8,6 +8,12 @@ import { notifyOpeningDocumentsSubmitted } from '@/lib/opening-notification';
 const personalKinds = ['identidade', 'titulo', 'estado-civil', 'endereco-socio'] as const;
 const companyKinds = ['iptu', 'endereco-empresa'] as const;
 type Partner = { name: string; cpf: string; percentage: number };
+type DocumentStatus = {
+  kind: string | null;
+  submittedAt: Date | null;
+  partners: Partner[];
+  legacy: boolean;
+};
 
 async function context(params: Promise<{ id: string }>) {
   const actor = await currentActor();
@@ -20,11 +26,22 @@ async function context(params: Promise<{ id: string }>) {
 }
 
 async function status(id: string, actorId: string) {
-  return database().$queryRaw<
-    Array<{ kind: string | null; submittedAt: Date | null; partners: Partner[] }>
-  >`
-    select kind, "submittedAt", partners
+  const [capability] = await database().$queryRaw<Array<{ available: boolean }>>`
+    select to_regprocedure('concloud.get_opening_lead_document_context(uuid,uuid)') is not null as available`;
+  if (capability?.available) {
+    const rows = await database().$queryRaw<Array<Omit<DocumentStatus, 'legacy'>>>`
+      select kind, "submittedAt", partners
+      from concloud.get_opening_lead_document_context(${id}::uuid, ${actorId}::uuid)`;
+    return rows.map((row) => ({ ...row, legacy: false }));
+  }
+  const rows = await database().$queryRaw<Array<Omit<DocumentStatus, 'partners' | 'legacy'>>>`
+    select kind, "submittedAt"
     from concloud.get_opening_lead_document_status(${id}::uuid, ${actorId}::uuid)`;
+  return rows.map((row) => ({
+    ...row,
+    partners: [{ name: 'Sócio responsável', cpf: '', percentage: 100 }],
+    legacy: true,
+  }));
 }
 
 function requiredKinds(partnerCount: number) {
@@ -46,6 +63,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       uploaded: rows.flatMap((row) => (row.kind ? [row.kind] : [])),
       submitted: Boolean(rows[0]?.submittedAt),
       partners: rows[0]?.partners ?? [],
+      legacy: rows[0]?.legacy ?? true,
     });
   } catch (error) {
     const unauthorized = error instanceof Error && error.message === 'UNAUTHORIZED';
@@ -75,7 +93,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const form = await request.formData();
     const shouldFinalize = form.get('finalize') === 'true';
     const partners = before[0]?.partners ?? [];
-    const kinds = requiredKinds(Math.max(partners.length, 1));
+    const kinds = before[0]?.legacy
+      ? [...personalKinds, ...companyKinds]
+      : requiredKinds(Math.max(partners.length, 1));
     for (const kind of kinds) {
       const value = form.get(kind);
       if (!(value instanceof File) || value.size === 0) continue;
