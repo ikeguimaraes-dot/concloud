@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { database } from '@database/client';
 import { rateLimit } from '@/lib/limits';
+import { notifyOpeningPaymentConfirmed } from '@/lib/opening-notification';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -18,6 +19,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return Response.json({ error: 'Origem não autorizada.' }, { status: 403 });
 
     await rateLimit(`test-payment:${id}`, 3);
+    await notifyOpeningPaymentConfirmed(id);
     await database().$executeRaw`
       select concloud.update_opening_lead_payment(
         ${id}::uuid, ${null}, ${'PAID'}, ${'TEST_BYPASS'}, ${null}, ${new Date()}

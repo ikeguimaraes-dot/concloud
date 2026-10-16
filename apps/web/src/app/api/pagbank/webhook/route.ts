@@ -2,6 +2,7 @@ import { createPublicKey, verify } from 'node:crypto';
 import { z } from 'zod';
 import { database } from '@database/client';
 import { pagBankApiUrl, pagBankToken } from '@/lib/pagbank';
+import { notifyOpeningPaymentConfirmed } from '@/lib/opening-notification';
 
 export const runtime = 'nodejs';
 
@@ -72,6 +73,7 @@ export async function POST(request: Request) {
     if (!status || !paymentStatuses.has(status) || (!leadId && !checkoutId))
       return new Response(null, { status: 204 });
 
+    if (status === 'PAID' && leadId) await notifyOpeningPaymentConfirmed(leadId);
     await database().$executeRaw`
       select concloud.update_opening_lead_payment(
         ${leadId}::uuid, ${checkoutId ?? null}, ${status}, ${charge?.id ?? null},

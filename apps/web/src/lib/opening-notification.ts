@@ -5,6 +5,23 @@ import {
   type OpeningProfile,
 } from '@/lib/opening-resume';
 import { sendTransactionalEmail } from '@/lib/transactional-email';
+import { database } from '@database/client';
+
+const paymentNotificationRecipients = [
+  'ricardo@orkestri.net',
+  'vitoria.mariano@oscpaulistana.com.br',
+  'amanda.alves@oscpaulistana.com.br',
+  'Igor.borges@oscpaulistana.com.br',
+];
+
+type PaidOpeningLead = {
+  id: string;
+  name: string;
+  cpf: string;
+  email: string;
+  phone: string;
+  plan: string;
+};
 
 const escapeHtml = (value: string) =>
   value.replace(
@@ -40,6 +57,27 @@ function emailHtml(profile: OpeningProfile) {
     </table>
     <h3>Documentos enviados</h3><ul>${documents}</ul>
     <p>Cadastro: ${escapeHtml(profile.id)}</p>`;
+}
+
+export async function notifyOpeningPaymentConfirmed(leadId: string) {
+  const leads = await database().$queryRaw<PaidOpeningLead[]>`
+    select id,name,cpf,email,phone,plan
+    from concloud.get_opening_lead_for_checkout(${leadId}::uuid)`;
+  const lead = leads[0];
+  if (!lead) throw new Error('OPENING_LEAD_NOT_FOUND');
+  const row = (label: string, value: string) =>
+    `<tr><th align="left" style="padding:8px;background:#fff4ec">${label}</th><td style="padding:8px">${escapeHtml(value || '—')}</td></tr>`;
+  return sendTransactionalEmail({
+    to: paymentNotificationRecipients,
+    subject: `Novo pagamento confirmado · ${lead.name}`,
+    html: `<h2>Novo pagamento confirmado para abertura de empresa</h2>
+      <table cellpadding="0" cellspacing="0" border="1" style="border-collapse:collapse;border-color:#eadfd8">
+        ${row('Nome', lead.name)}${row('CPF', lead.cpf)}${row('E-mail', lead.email)}
+        ${row('Celular', lead.phone)}${row('Plano', lead.plan)}${row('Pagamento', 'Confirmado')}
+      </table>
+      <p>Cadastro: ${escapeHtml(lead.id)}</p>`,
+    idempotencyKey: `opening-payment-confirmed/${lead.id}`,
+  });
 }
 
 export async function notifyOpeningDocumentsSubmitted(authUserId: string) {
