@@ -9,19 +9,18 @@ import {
   FileUp,
   Info,
   Loader2,
-  Plus,
   ShieldCheck,
   Users,
 } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
 
-const documents = [
+const personalDocuments = [
   {
     id: 'identidade',
-    label: 'CNH ou RG do sócio',
+    label: 'CNH ou RG',
     hint: 'Frente e verso, legível e dentro da validade.',
   },
-  { id: 'titulo', label: 'Título de Eleitor do sócio', hint: 'Envie uma foto ou arquivo digital.' },
+  { id: 'titulo', label: 'Título de Eleitor', hint: 'Envie uma foto ou arquivo digital.' },
   {
     id: 'estado-civil',
     label: 'Comprovante de estado civil',
@@ -29,9 +28,11 @@ const documents = [
   },
   {
     id: 'endereco-socio',
-    label: 'Comprovante de endereço residencial do sócio',
+    label: 'Comprovante de endereço residencial',
     hint: 'Preferencialmente emitido nos últimos 90 dias.',
   },
+];
+const companyDocuments = [
   {
     id: 'iptu',
     label: 'Capa do IPTU do imóvel do empreendimento',
@@ -43,6 +44,7 @@ const documents = [
     hint: 'Conta ou documento atual do imóvel.',
   },
 ];
+type Partner = { name: string; cpf: string; percentage: number };
 const maxFileBytes = 4 * 1024 * 1024;
 
 async function responseJson<T>(response: Response): Promise<T> {
@@ -61,6 +63,7 @@ async function responseJson<T>(response: Response): Promise<T> {
 export default function OpeningDocuments() {
   const [files, setFiles] = useState<Record<string, File | undefined>>({});
   const [uploaded, setUploaded] = useState<string[]>([]);
+  const [partners, setPartners] = useState<Partner[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -69,13 +72,26 @@ export default function OpeningDocuments() {
     typeof window === 'undefined'
       ? ''
       : (new URLSearchParams(window.location.search).get('cadastro') ?? '');
+  const documents = useMemo(
+    () => [
+      ...partners.flatMap((partner, index) =>
+        personalDocuments.map((document) => ({
+          ...document,
+          id: `socio-${index + 1}-${document.id}`,
+          label: `${document.label} — ${partner.name}`,
+        })),
+      ),
+      ...companyDocuments,
+    ],
+    [partners],
+  );
   const complete = useMemo(() => {
     const ready = new Set(uploaded);
     documents.forEach((document) => {
       if (files[document.id]) ready.add(document.id);
     });
     return documents.filter((document) => ready.has(document.id)).length;
-  }, [files, uploaded]);
+  }, [documents, files, uploaded]);
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get('cadastro') ?? '';
     const endpoint = id
@@ -92,10 +108,12 @@ export default function OpeningDocuments() {
               const documentsResult = (await documentsResponse.json()) as {
                 uploaded?: string[];
                 submitted?: boolean;
+                partners?: Partner[];
               };
               if (documentsResponse.ok) {
                 setUploaded(documentsResult.uploaded ?? []);
                 setSubmitted(Boolean(documentsResult.submitted));
+                setPartners(documentsResult.partners ?? []);
               }
             })
             .catch(() => undefined);
@@ -340,11 +358,13 @@ export default function OpeningDocuments() {
           <div className="partner-note">
             <Users />
             <div>
-              <b>Mais de um sócio?</b>
-              <p>Adicione a documentação individual de cada sócio.</p>
-              <button type="button">
-                <Plus /> Adicionar outro sócio
-              </button>
+              <b>{partners.length > 1 ? `${partners.length} sócios cadastrados` : 'Sócio único'}</b>
+              <p>A documentação pessoal está separada para cada sócio informado no cadastro.</p>
+              {partners.map((partner) => (
+                <small className="registered-partner" key={partner.cpf}>
+                  {partner.name} · {partner.percentage}%
+                </small>
+              ))}
             </div>
           </div>
           <div className="info-card">

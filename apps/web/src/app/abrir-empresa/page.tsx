@@ -12,9 +12,14 @@ import {
   Loader2,
   LockKeyhole,
   MapPin,
+  Plus,
   ShieldCheck,
+  Trash2,
   UserRound,
+  Users,
 } from 'lucide-react';
+
+type Partner = { name: string; cpf: string; percentage: string };
 import { BrandLogo } from '@/components/brand-logo';
 
 type Lead = {
@@ -30,6 +35,9 @@ type Lead = {
   city: string;
   state: string;
   plan: string;
+  hasPartners: boolean | null;
+  ownerPercentage: string;
+  partners: Partner[];
   marketingConsent: boolean;
 };
 const initial: Lead = {
@@ -45,6 +53,9 @@ const initial: Lead = {
   city: '',
   state: '',
   plan: '',
+  hasPartners: null,
+  ownerPercentage: '100',
+  partners: [],
   marketingConsent: false,
 };
 const activities = [
@@ -132,6 +143,21 @@ export default function OpenCompany() {
   const change = (key: keyof Lead, value: string) =>
     setLead((current) => ({ ...current, [key]: value }));
   const selectedPlan = plans.find((plan) => plan.id === lead.plan);
+  const totalPercentage =
+    Number(lead.ownerPercentage || 0) +
+    lead.partners.reduce((total, partner) => total + Number(partner.percentage || 0), 0);
+  const partnersAreValid =
+    lead.hasPartners !== null &&
+    (!lead.hasPartners ||
+      (lead.partners.length > 0 &&
+        lead.partners.every(
+          (partner) =>
+            partner.name.trim().length >= 3 &&
+            onlyDigits(partner.cpf).length === 11 &&
+            Number(partner.percentage) > 0,
+        ))) &&
+    Number(lead.ownerPercentage) > 0 &&
+    Math.abs(totalPercentage - 100) < 0.001;
   const passwordIsValid =
     lead.password.length >= 8 &&
     /[^\p{L}\p{N}]/u.test(lead.password) &&
@@ -148,8 +174,36 @@ export default function OpenCompany() {
       : step === 2
         ? !!(lead.activity && lead.zipCode && lead.addressType && lead.city && lead.state)
         : step === 3
-          ? !!lead.plan
-          : true;
+          ? partnersAreValid
+          : step === 4
+            ? !!lead.plan
+            : true;
+
+  function choosePartners(hasPartners: boolean) {
+    setLead((current) => ({
+      ...current,
+      hasPartners,
+      ownerPercentage: hasPartners
+        ? current.ownerPercentage === '100'
+          ? ''
+          : current.ownerPercentage
+        : '100',
+      partners: hasPartners
+        ? current.partners.length
+          ? current.partners
+          : [{ name: '', cpf: '', percentage: '' }]
+        : [],
+    }));
+  }
+
+  function updatePartner(index: number, key: keyof Partner, value: string) {
+    setLead((current) => ({
+      ...current,
+      partners: current.partners.map((partner, partnerIndex) =>
+        partnerIndex === index ? { ...partner, [key]: value } : partner,
+      ),
+    }));
+  }
 
   async function advance() {
     setError('');
@@ -213,11 +267,12 @@ export default function OpenCompany() {
           <div>
             <span>Abra sua empresa</span>
             <b>
-              {step}/4 · {['Seu acesso', 'Sua atividade', 'Seu plano', 'Pagamento'][step - 1]}
+              {step}/5 ·{' '}
+              {['Seu acesso', 'Sua atividade', 'Sócios', 'Seu plano', 'Pagamento'][step - 1]}
             </b>
           </div>
           <i>
-            <b style={{ width: `${step * 25}%` }} />
+            <b style={{ width: `${step * 20}%` }} />
           </i>
           <small>Leva menos de 3 minutos</small>
         </div>
@@ -402,6 +457,151 @@ export default function OpenCompany() {
 
         {step === 3 && (
           <section className="opening-step">
+            <div className="step-icon">
+              <Users />
+            </div>
+            <span className="marketing-kicker">COMPOSIÇÃO SOCIETÁRIA</span>
+            <h1>Quem fará parte da empresa?</h1>
+            <p>Informe todos os sócios e a participação de cada um. A soma deve ser 100%.</p>
+            <fieldset>
+              <legend>A empresa terá outros sócios além de você?</legend>
+              <div className="partner-choice-grid">
+                <button
+                  type="button"
+                  className={lead.hasPartners === false ? 'choice active' : 'choice'}
+                  onClick={() => choosePartners(false)}
+                >
+                  <span>
+                    <b>Não, serei o único sócio</b>
+                    <small>Sua participação será de 100%.</small>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className={lead.hasPartners === true ? 'choice active' : 'choice'}
+                  onClick={() => choosePartners(true)}
+                >
+                  <span>
+                    <b>Sim, teremos mais sócios</b>
+                    <small>Adicione os dados de cada participante.</small>
+                  </span>
+                </button>
+              </div>
+            </fieldset>
+            {lead.hasPartners !== null && (
+              <div className="partners-form">
+                <div className="partner-form-card owner">
+                  <div className="partner-form-heading">
+                    <b>{lead.name || 'Você'}</b>
+                    <small>Sócio responsável</small>
+                  </div>
+                  <label>
+                    Percentual de participação
+                    <span className="percentage-field">
+                      <input
+                        inputMode="decimal"
+                        value={lead.ownerPercentage}
+                        onChange={(event) =>
+                          change(
+                            'ownerPercentage',
+                            event.target.value.replace(/[^\d.,]/g, '').replace(',', '.'),
+                          )
+                        }
+                      />
+                      <b>%</b>
+                    </span>
+                  </label>
+                </div>
+                {lead.hasPartners &&
+                  lead.partners.map((partner, index) => (
+                    <div className="partner-form-card" key={index}>
+                      <div className="partner-form-heading">
+                        <b>Sócio {index + 2}</b>
+                        <button
+                          type="button"
+                          aria-label={`Remover sócio ${index + 2}`}
+                          onClick={() =>
+                            setLead((current) => ({
+                              ...current,
+                              partners: current.partners.filter(
+                                (_, partnerIndex) => partnerIndex !== index,
+                              ),
+                            }))
+                          }
+                        >
+                          <Trash2 />
+                        </button>
+                      </div>
+                      <label>
+                        Nome completo
+                        <input
+                          value={partner.name}
+                          onChange={(event) => updatePartner(index, 'name', event.target.value)}
+                        />
+                      </label>
+                      <div className="field-pair equal">
+                        <label>
+                          CPF
+                          <input
+                            inputMode="numeric"
+                            value={partner.cpf}
+                            onChange={(event) =>
+                              updatePartner(index, 'cpf', formatCpf(event.target.value))
+                            }
+                            placeholder="000.000.000-00"
+                          />
+                        </label>
+                        <label>
+                          Participação
+                          <span className="percentage-field">
+                            <input
+                              inputMode="decimal"
+                              value={partner.percentage}
+                              onChange={(event) =>
+                                updatePartner(
+                                  index,
+                                  'percentage',
+                                  event.target.value.replace(/[^\d.,]/g, '').replace(',', '.'),
+                                )
+                              }
+                            />
+                            <b>%</b>
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                {lead.hasPartners && (
+                  <button
+                    type="button"
+                    className="add-partner-button"
+                    onClick={() =>
+                      setLead((current) => ({
+                        ...current,
+                        partners: [...current.partners, { name: '', cpf: '', percentage: '' }],
+                      }))
+                    }
+                  >
+                    <Plus /> Adicionar outro sócio
+                  </button>
+                )}
+                <div
+                  className={
+                    Math.abs(totalPercentage - 100) < 0.001
+                      ? 'percentage-total complete'
+                      : 'percentage-total'
+                  }
+                >
+                  <span>Total da participação</span>
+                  <b>{totalPercentage || 0}% de 100%</b>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {step === 4 && (
+          <section className="opening-step">
             <span className="marketing-kicker">ESCOLHA SEM SURPRESAS</span>
             <h1>O plano certo para começar</h1>
             <p>Preço mensal claro. Você acompanha tudo pela ConCloud.</p>
@@ -430,7 +630,7 @@ export default function OpenCompany() {
           </section>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
           <section className="opening-step review purchase-review">
             <div className="step-icon">
               <CreditCard />
@@ -467,6 +667,10 @@ export default function OpenCompany() {
                   {lead.city} · {lead.state}
                 </dd>
               </div>
+              <div>
+                <dt>Quadro societário</dt>
+                <dd>{lead.hasPartners ? `${lead.partners.length + 1} sócios` : 'Sócio único'}</dd>
+              </div>
             </dl>
             <div className="next-steps">
               <b>O que acontece depois?</b>
@@ -497,7 +701,7 @@ export default function OpenCompany() {
           ) : (
             <span />
           )}
-          {step < 4 ? (
+          {step < 5 ? (
             <button
               type="button"
               className="marketing-cta"

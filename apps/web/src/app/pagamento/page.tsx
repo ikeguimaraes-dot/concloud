@@ -17,7 +17,8 @@ export default async function Payment({
   const { cadastro = '', plano = 'essencial' } = await searchParams;
   const selected = plans[plano] ?? plans.essencial;
   const testPaymentEnabled =
-    !!cadastro && cadastro === process.env.PAYMENT_TEST_LEAD_ID;
+    !!cadastro &&
+    (process.env.PAGBANK_ENV === 'sandbox' || cadastro === process.env.PAYMENT_TEST_LEAD_ID);
 
   return (
     <main className="opening-page checkout-page">

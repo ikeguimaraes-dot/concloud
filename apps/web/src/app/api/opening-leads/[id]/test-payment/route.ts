@@ -2,19 +2,18 @@ import { z } from 'zod';
 import { database } from '@database/client';
 import { rateLimit } from '@/lib/limits';
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = z.string().uuid().parse((await params).id);
+    const id = z
+      .string()
+      .uuid()
+      .parse((await params).id);
     const allowedId = process.env.PAYMENT_TEST_LEAD_ID;
-    if (!allowedId || id !== allowedId)
+    const sandboxEnabled = process.env.PAGBANK_ENV === 'sandbox';
+    if (!sandboxEnabled && (!allowedId || id !== allowedId))
       return Response.json({ error: 'Atalho de teste indisponível.' }, { status: 404 });
 
-    const expectedOrigin = process.env.APP_URL
-      ? new URL(process.env.APP_URL).origin
-      : undefined;
+    const expectedOrigin = process.env.APP_URL ? new URL(process.env.APP_URL).origin : undefined;
     if (!expectedOrigin || request.headers.get('origin') !== expectedOrigin)
       return Response.json({ error: 'Origem não autorizada.' }, { status: 403 });
 

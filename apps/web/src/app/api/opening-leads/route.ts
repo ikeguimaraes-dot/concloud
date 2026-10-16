@@ -25,11 +25,43 @@ const schema = z
     city: z.string().trim().min(2).max(120),
     state: z.string().trim().min(2).max(20),
     plan: z.enum(['essencial', 'gestao', 'proximo']),
+    hasPartners: z.boolean(),
+    ownerPercentage: z.coerce.number().positive().max(100),
+    partners: z
+      .array(
+        z.object({
+          name: z.string().trim().min(3).max(120),
+          cpf: z
+            .string()
+            .transform((value) => value.replace(/\D/g, ''))
+            .pipe(z.string().length(11)),
+          percentage: z.coerce.number().positive().max(100),
+        }),
+      )
+      .max(20),
     draftToken: z.string().uuid(),
   })
   .refine((input) => input.password === input.passwordConfirmation, {
     path: ['passwordConfirmation'],
-  });
+  })
+  .refine((input) => input.hasPartners === input.partners.length > 0, {
+    path: ['partners'],
+  })
+  .refine(
+    (input) =>
+      Math.abs(
+        input.ownerPercentage +
+          input.partners.reduce((total, partner) => total + partner.percentage, 0) -
+          100,
+      ) < 0.001,
+    { path: ['partners'] },
+  )
+  .refine(
+    (input) =>
+      new Set([input.cpf, ...input.partners.map((partner) => partner.cpf)]).size ===
+      input.partners.length + 1,
+    { path: ['partners'] },
+  );
 export async function POST(request: Request) {
   let auth: ReturnType<typeof createClient> | null = null;
   let authUserId: string | null = null;
@@ -93,15 +125,31 @@ export async function POST(request: Request) {
       select to_regprocedure(
         'concloud.submit_opening_lead(text,text,text,text,text,text,text,text,text,text,uuid,text)'
       ) is not null as "draftAware"`;
-    const rows = capability?.draftAware
+    const partners = [
+      { name: input.name, cpf: input.cpf, percentage: input.ownerPercentage },
+      ...input.partners,
+    ];
+    const [partnersCapability] = await database().$queryRaw<Array<{ available: boolean }>>`
+      select to_regprocedure(
+        'concloud.submit_opening_lead(text,text,text,text,text,text,text,text,text,text,uuid,text,jsonb)'
+      ) is not null as available`;
+    const rows = partnersCapability?.available
       ? await database().$queryRaw<Array<{ id: string }>>`
+          select concloud.submit_opening_lead(
+            ${input.name}, ${input.cpf}, ${input.email.toLowerCase()}, ${input.phone},
+            ${input.activity}, ${input.zipCode}, ${input.addressType}, ${input.city},
+            ${input.state}, ${input.plan}, ${authUserId}::uuid,
+            ${openingDraftHash(input.draftToken)}, ${JSON.stringify(partners)}::jsonb
+          ) as id`
+      : capability?.draftAware
+        ? await database().$queryRaw<Array<{ id: string }>>`
           select concloud.submit_opening_lead(
             ${input.name}, ${input.cpf}, ${input.email.toLowerCase()}, ${input.phone},
             ${input.activity}, ${input.zipCode}, ${input.addressType}, ${input.city},
             ${input.state}, ${input.plan}, ${authUserId}::uuid,
             ${openingDraftHash(input.draftToken)}
           ) as id`
-      : await database().$queryRaw<Array<{ id: string }>>`
+        : await database().$queryRaw<Array<{ id: string }>>`
           select concloud.submit_opening_lead(
             ${input.name}, ${input.cpf}, ${input.email.toLowerCase()}, ${input.phone},
             ${input.activity}, ${input.zipCode}, ${input.addressType}, ${input.city},

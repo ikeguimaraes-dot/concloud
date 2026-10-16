@@ -958,6 +958,90 @@ body {
   background: #fff7f2;
   color: #142640;
 }
+.partner-choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.partners-form {
+  margin-top: 22px;
+  text-align: left;
+}
+.partner-form-card {
+  border: 1px solid #dfe4ec;
+  border-radius: 14px;
+  padding: 18px;
+  margin: 12px 0;
+  background: #fff;
+}
+.partner-form-card.owner {
+  background: #f8fafc;
+}
+.partner-form-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.partner-form-heading small {
+  color: #7a8597;
+}
+.partner-form-heading button {
+  border: 0;
+  background: transparent;
+  color: #a54b3b;
+  padding: 4px;
+}
+.partner-form-heading button svg {
+  width: 18px;
+}
+.percentage-field {
+  display: block;
+  position: relative;
+}
+.percentage-field input {
+  padding-right: 42px;
+}
+.percentage-field > b {
+  position: absolute;
+  right: 15px;
+  top: 25px;
+  color: #718097;
+}
+.add-partner-button {
+  width: 100%;
+  min-height: 46px;
+  border: 1px dashed #ff5a00;
+  border-radius: 10px;
+  background: #fff7f2;
+  color: #d94d00;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.add-partner-button svg {
+  width: 17px;
+}
+.percentage-total {
+  margin-top: 14px;
+  padding: 13px 15px;
+  border-radius: 10px;
+  background: #fff3f0;
+  color: #b42318;
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+.percentage-total.complete {
+  color: #087443;
+  background: #e9f8f0;
+}
+.registered-partner {
+  display: block;
+  color: #667289;
+  margin-top: 6px;
+}
 .opening-plans {
   display: grid;
   gap: 12px;
@@ -1742,6 +1826,9 @@ body {
     grid-template-columns: 1fr;
   }
   .field-pair.equal {
+    grid-template-columns: 1fr;
+  }
+  .partner-choice-grid {
     grid-template-columns: 1fr;
   }
   .documents-layout {

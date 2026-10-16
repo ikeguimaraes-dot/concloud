@@ -5,14 +5,9 @@ import { currentActor } from '@/lib/auth';
 import { rateLimit } from '@/lib/limits';
 import { notifyOpeningDocumentsSubmitted } from '@/lib/opening-notification';
 
-const kinds = [
-  'identidade',
-  'titulo',
-  'estado-civil',
-  'endereco-socio',
-  'iptu',
-  'endereco-empresa',
-] as const;
+const personalKinds = ['identidade', 'titulo', 'estado-civil', 'endereco-socio'] as const;
+const companyKinds = ['iptu', 'endereco-empresa'] as const;
+type Partner = { name: string; cpf: string; percentage: number };
 
 async function context(params: Promise<{ id: string }>) {
   const actor = await currentActor();
@@ -25,9 +20,20 @@ async function context(params: Promise<{ id: string }>) {
 }
 
 async function status(id: string, actorId: string) {
-  return database().$queryRaw<Array<{ kind: string | null; submittedAt: Date | null }>>`
-    select kind, "submittedAt"
+  return database().$queryRaw<
+    Array<{ kind: string | null; submittedAt: Date | null; partners: Partner[] }>
+  >`
+    select kind, "submittedAt", partners
     from concloud.get_opening_lead_document_status(${id}::uuid, ${actorId}::uuid)`;
+}
+
+function requiredKinds(partnerCount: number) {
+  return [
+    ...Array.from({ length: partnerCount }, (_, index) =>
+      personalKinds.map((kind) => `socio-${index + 1}-${kind}`),
+    ).flat(),
+    ...companyKinds,
+  ];
 }
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -39,6 +45,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return Response.json({
       uploaded: rows.flatMap((row) => (row.kind ? [row.kind] : [])),
       submitted: Boolean(rows[0]?.submittedAt),
+      partners: rows[0]?.partners ?? [],
     });
   } catch (error) {
     const unauthorized = error instanceof Error && error.message === 'UNAUTHORIZED';
@@ -58,13 +65,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const { actor, id } = await context(params);
     if (request.headers.get('origin') !== new URL(request.url).origin)
       return Response.json({ error: 'Origem não autorizada.' }, { status: 403 });
-    await rateLimit(`opening-documents-upload:${actor.id}`, 8);
+    // Each document is intentionally uploaded in its own request. Allow the full
+    // maximum partner set plus retries without blocking a legitimate submission.
+    await rateLimit(`opening-documents-upload:${actor.id}`, 100);
     const before = await status(id, actor.id);
     if (!before.length)
       return Response.json({ error: 'Cadastro não autorizado.' }, { status: 404 });
 
     const form = await request.formData();
     const shouldFinalize = form.get('finalize') === 'true';
+    const partners = before[0]?.partners ?? [];
+    const kinds = requiredKinds(Math.max(partners.length, 1));
     for (const kind of kinds) {
       const value = form.get(kind);
       if (!(value instanceof File) || value.size === 0) continue;
