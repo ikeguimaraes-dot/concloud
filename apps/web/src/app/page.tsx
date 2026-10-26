@@ -251,6 +251,25 @@ export default function Home() {
         </div>
         <div className="plan-grid">
           <article>
+            <small>MEI</small>
+            <h3>Abertura de CNPJ - MEI</h3>
+            <p>Para quem quer abrir MEI, por R$ 39,90/mês.</p>
+            <ul>
+              <li>
+                <Check /> Abertura do seu CNPJ MEI
+              </li>
+              <li>
+                <Check /> Envio de documentos pela plataforma
+              </li>
+              <li>
+                <Check /> Acompanhamento da abertura
+              </li>
+            </ul>
+            <Link href="/abrir-empresa">
+              Abrir meu MEI <ArrowRight />
+            </Link>
+          </article>
+          <article>
             <small>ESSENCIAL</small>
             <h3>Para começar organizado</h3>
             <p>Rotina contábil, documentos, guias e atendimento digital.</p>

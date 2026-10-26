@@ -61,6 +61,7 @@ async function responseJson<T>(response: Response): Promise<T> {
 }
 
 export default function OpeningDocuments() {
+  const [plan, setPlan] = useState('');
   const [files, setFiles] = useState<Record<string, File | undefined>>({});
   const [uploaded, setUploaded] = useState<string[]>([]);
   const [partners, setPartners] = useState<Partner[]>([
@@ -84,9 +85,9 @@ export default function OpeningDocuments() {
           label: `${document.label} — ${partner.name}`,
         })),
       ),
-      ...companyDocuments,
+      ...companyDocuments.filter((document) => plan !== 'mei' || document.id !== 'iptu'),
     ],
-    [legacyDocuments, partners],
+    [legacyDocuments, partners, plan],
   );
   const complete = useMemo(() => {
     const ready = new Set(uploaded);
@@ -113,8 +114,10 @@ export default function OpeningDocuments() {
                 submitted?: boolean;
                 partners?: Partner[];
                 legacy?: boolean;
+                plan?: string;
               };
               if (documentsResponse.ok) {
+                setPlan(documentsResult.plan ?? '');
                 setUploaded(documentsResult.uploaded ?? []);
                 setSubmitted(Boolean(documentsResult.submitted));
                 setPartners(
@@ -277,7 +280,9 @@ export default function OpeningDocuments() {
         </span>
       </header>
       <div className="documents-hero">
-        <span className="marketing-kicker">ABERTURA DE CNPJ</span>
+        <span className="marketing-kicker">
+          {plan === 'mei' ? 'ABERTURA DE CNPJ - MEI' : 'ABERTURA DE CNPJ'}
+        </span>
         <h1>Agora vamos reunir seus documentos</h1>
         <p>Envie cada item com calma. Você pode acompanhar o que já está pronto.</p>
         <div className="document-progress">
@@ -384,9 +389,13 @@ export default function OpeningDocuments() {
             <p>Deixe estas respostas preparadas. A equipe irá confirmá-las durante o processo:</p>
             <ul>
               <li>Atividade do empreendimento</li>
-              <li>Quem serão os sócios</li>
-              <li>Capital social e percentual de participação</li>
-              <li>Regime de tributação: Simples Nacional</li>
+              {plan !== 'mei' && (
+                <>
+                  <li>Quem serão os sócios</li>
+                  <li>Capital social e percentual de participação</li>
+                  <li>Regime de tributação: Simples Nacional</li>
+                </>
+              )}
             </ul>
           </div>
           <details>

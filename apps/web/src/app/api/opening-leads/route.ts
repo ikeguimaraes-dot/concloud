@@ -24,7 +24,7 @@ const schema = z
     addressType: z.enum(['residencial', 'orientacao']),
     city: z.string().trim().min(2).max(120),
     state: z.string().trim().min(2).max(20),
-    plan: z.enum(['essencial', 'gestao', 'proximo']),
+    plan: z.enum(['mei', 'essencial', 'gestao', 'proximo']),
     hasPartners: z.boolean(),
     ownerPercentage: z.coerce.number().positive().max(100),
     partners: z
@@ -40,6 +40,10 @@ const schema = z
       )
       .max(20),
     draftToken: z.string().uuid(),
+  })
+  .refine((input) => input.plan !== 'mei' || !input.hasPartners, {
+    path: ['plan'],
+    message: 'O plano MEI é destinado a um único titular.',
   })
   .refine((input) => input.password === input.passwordConfirmation, {
     path: ['passwordConfirmation'],

@@ -4,6 +4,7 @@ import { CheckoutButton } from './checkout-button';
 import { BrandLogo } from '@/components/brand-logo';
 
 const plans: Record<string, { name: string; price: string }> = {
+  mei: { name: 'Abertura de CNPJ - MEI', price: 'R$ 39,90/mês' },
   essencial: { name: 'Essencial', price: 'R$ 99/mês' },
   gestao: { name: 'Gestão', price: 'R$ 149/mês' },
   proximo: { name: 'Próximo', price: 'R$ 199/mês' },

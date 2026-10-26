@@ -23,7 +23,7 @@ const schema = z.object({
   city: z.string().trim().max(120).optional().default(''),
   state: z.string().trim().max(20).optional().default(''),
   plan: z
-    .union([z.literal(''), z.enum(['essencial', 'gestao', 'proximo'])])
+    .union([z.literal(''), z.enum(['mei', 'essencial', 'gestao', 'proximo'])])
     .optional()
     .default(''),
   marketingConsent: z.boolean().optional().default(false),

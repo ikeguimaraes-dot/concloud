@@ -27,6 +27,7 @@ export function appUrl() {
 }
 
 export const pagBankPlans = {
+  mei: { name: 'Abertura de CNPJ - MEI', amount: 3990 },
   essencial: { name: 'ConCloud Essencial', amount: 9900 },
   gestao: { name: 'ConCloud Gestão', amount: 14900 },
   proximo: { name: 'ConCloud Próximo', amount: 19900 },

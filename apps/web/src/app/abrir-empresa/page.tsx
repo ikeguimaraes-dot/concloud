@@ -110,6 +110,12 @@ const states = [
 ];
 const plans = [
   {
+    id: 'mei',
+    name: 'Abertura de CNPJ - MEI',
+    price: 'R$ 39,90',
+    description: 'Para quem quer abrir MEI.',
+  },
+  {
     id: 'essencial',
     name: 'Essencial',
     price: 'R$ 99',
@@ -176,13 +182,14 @@ export default function OpenCompany() {
         : step === 3
           ? partnersAreValid
           : step === 4
-            ? !!lead.plan
+            ? !!lead.plan && (lead.plan !== 'mei' || !lead.hasPartners)
             : true;
 
   function choosePartners(hasPartners: boolean) {
     setLead((current) => ({
       ...current,
       hasPartners,
+      plan: hasPartners && current.plan === 'mei' ? '' : current.plan,
       ownerPercentage: hasPartners
         ? current.ownerPercentage === '100'
           ? ''
@@ -613,6 +620,7 @@ export default function OpenCompany() {
                   type="button"
                   key={plan.id}
                   className={lead.plan === plan.id ? 'active' : ''}
+                  disabled={plan.id === 'mei' && lead.hasPartners === true}
                   onClick={() => change('plan', plan.id)}
                 >
                   {plan.badge && <em>{plan.badge}</em>}
@@ -622,7 +630,11 @@ export default function OpenCompany() {
                     {plan.price}
                     <small>/mês</small>
                   </strong>
-                  <small>{plan.description}</small>
+                  <small>
+                    {plan.id === 'mei' && lead.hasPartners
+                      ? 'Disponível para um único titular, sem outros sócios.'
+                      : plan.description}
+                  </small>
                 </button>
               ))}
             </div>

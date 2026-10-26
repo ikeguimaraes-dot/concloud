@@ -13,6 +13,7 @@ type DocumentStatus = {
   submittedAt: Date | null;
   partners: Partner[];
   legacy: boolean;
+  plan?: string;
 };
 
 async function context(params: Promise<{ id: string }>) {
@@ -26,6 +27,14 @@ async function context(params: Promise<{ id: string }>) {
 }
 
 async function status(id: string, actorId: string) {
+  const [meiCapability] = await database().$queryRaw<Array<{ available: boolean }>>`
+    select to_regprocedure('concloud.get_opening_lead_document_context_v2(uuid,uuid)') is not null as available`;
+  if (meiCapability?.available) {
+    const rows = await database().$queryRaw<Array<Omit<DocumentStatus, 'legacy'>>>`
+      select kind, "submittedAt", partners, plan
+      from concloud.get_opening_lead_document_context_v2(${id}::uuid, ${actorId}::uuid)`;
+    return rows.map((row) => ({ ...row, legacy: false }));
+  }
   const [capability] = await database().$queryRaw<Array<{ available: boolean }>>`
     select to_regprocedure('concloud.get_opening_lead_document_context(uuid,uuid)') is not null as available`;
   if (capability?.available) {
@@ -44,12 +53,12 @@ async function status(id: string, actorId: string) {
   }));
 }
 
-function requiredKinds(partnerCount: number) {
+function requiredKinds(partnerCount: number, plan?: string) {
   return [
     ...Array.from({ length: partnerCount }, (_, index) =>
       personalKinds.map((kind) => `socio-${index + 1}-${kind}`),
     ).flat(),
-    ...companyKinds,
+    ...companyKinds.filter((kind) => plan !== 'mei' || kind !== 'iptu'),
   ];
 }
 
@@ -64,6 +73,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       submitted: Boolean(rows[0]?.submittedAt),
       partners: rows[0]?.partners ?? [],
       legacy: rows[0]?.legacy ?? true,
+      plan: rows[0]?.plan,
     });
   } catch (error) {
     const unauthorized = error instanceof Error && error.message === 'UNAUTHORIZED';
@@ -95,7 +105,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const partners = before[0]?.partners ?? [];
     const kinds = before[0]?.legacy
       ? [...personalKinds, ...companyKinds]
-      : requiredKinds(Math.max(partners.length, 1));
+      : requiredKinds(Math.max(partners.length, 1), before[0]?.plan);
     for (const kind of kinds) {
       const value = form.get(kind);
       if (!(value instanceof File) || value.size === 0) continue;
