@@ -474,3 +474,55 @@ it('arrastar reutiliza apenas checklist explicitamente salvo na versão atual', 
       .rows[0],
   ).toEqual({ stage: 1, version: 4 });
 });
+
+it('resumo de documentos conta só arquivos atuais autorizados e respeita alterações de sócios', async () => {
+  const { documentProgressForLeads } =
+    await import('../apps/web/src/lib/opening-document-progress');
+  const id = (
+    await db.query<{ id: string }>(
+      'select concloud.save_opening_lead_draft($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) as id',
+      [
+        'f'.repeat(64),
+        'Resumo documentos',
+        '00000000004',
+        'docs@example.invalid',
+        '000000000',
+        2,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        false,
+      ],
+    )
+  ).rows[0].id;
+  await db.query(
+    'update concloud."OpeningLead" set plan=\'mei\',partners=\'[ {"name":"Titular sintético"} ]\'::jsonb where id=$1',
+    [id],
+  );
+  for (const kind of ['socio-1-identidade', 'socio-1-titulo', 'endereco-empresa']) {
+    await db.query(
+      'insert into concloud."OpeningLeadDocument"("openingLeadId",kind,filename,mime,size,bucket,"objectKey") values($1,$2,\'synthetic.pdf\',\'application/pdf\',12,\'concloud-private\',$3)',
+      [id, kind, `opening-leads/${id}/${kind}/v1`],
+    );
+  }
+  const input = [{ id, plan: 'mei', partnerCount: 1 }];
+  expect(await asActor(() => documentProgressForLeads(tx, input, true))).toEqual([
+    { status: 'available', required: 5, uploaded: 3, missing: 2 },
+  ]);
+  expect(await asActor(() => documentProgressForLeads(tx, input, false))).toEqual([
+    { status: 'restricted' },
+  ]);
+  expect(await asActor(() => documentProgressForLeads(tx, input, true), client)).toEqual([
+    { status: 'available', required: 5, uploaded: 0, missing: 5 },
+  ]);
+  await db.query(
+    'update concloud."OpeningLead" set partners=\'[ {"name":"Titular alterado"} ]\'::jsonb where id=$1',
+    [id],
+  );
+  expect(await asActor(() => documentProgressForLeads(tx, input, true))).toEqual([
+    { status: 'available', required: 5, uploaded: 0, missing: 5 },
+  ]);
+});

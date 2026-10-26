@@ -63,3 +63,11 @@ Migration aditiva restrita ao schema concloud: evento automático tem actorId nu
 Migration aplicada e verificada: 4 cadastros e 12 documentos preservados; 3 processos JUCESP criados em Recepção e triagem, todos com pagamento de teste explicitado no evento. Zero cadastros PAID sem processo. Nenhum cliente foi movido além da entrada solicitada. Advisors mantêm os seis avisos legados de search_path, sem novo alerta.
 
 Smoke aprovado em 1440 e 390 px: Todos os fluxos, busca com e sem resultados, etapa localizada, drag desktop persistido após recarga e bloqueio sem movimento. No celular, a mesma transição é acessível pelo botão Abrir processo. Builds, TypeScript e lint aprovados. Referência técnica do trigger: https://supabase.com/docs/guides/database/postgres/triggers.
+
+## 26/10/2026 — resumo documental na listagem
+
+Cadastros passa a exibir a coluna Documentos: enviados/necessários, barra de progresso e quantidade faltante. São cinco documentos por titular MEI; pequenas empresas usam quatro por sócio mais IPTU e endereço empresarial. O cálculo usa as mesmas categorias do fluxo operacional. Plano ou sócios ainda indefinidos mostram Aguardando plano e sócios, sem total fictício. Contagem de envio não significa aprovação: arquivo rejeitado continua enviado e a revisão permanece na ficha.
+
+A API retorna documentProgress por cadastro: available (required/uploaded/missing), pending_details ou restricted. Consulta somente metadados atuais, vinculados à configuração atual dos sócios, em lote para a página autorizada; não abre arquivos nem gera URLs. Mantém RLS e permissão documental. Reenvios/versões não duplicam contagens, anexos extras não reduzem faltantes. Nenhuma migration necessária.
+
+Aceite: MEI com três categorias atuais mostra 3 de 5 enviados e Faltam 2; pequena empresa com dois sócios exige dez; sem dados não simula total; sem acesso não revela contagem; alteração dos sócios invalida os arquivos correspondentes. Testes unitários e PGlite cobrem esses casos. 53 testes do portal aprovados e 13 dependentes de PostgreSQL nativo ignorados; builds, TypeScript, lint e smoke desktop/celular concluídos.

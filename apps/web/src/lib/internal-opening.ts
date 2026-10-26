@@ -1,5 +1,6 @@
 import 'server-only';
 import { operations } from './internal-operations';
+import { documentProgressForLeads } from './opening-document-progress';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { transaction, type Actor, type Tx } from '@database/client';
@@ -151,8 +152,8 @@ export async function internalOpening(request: Request, path: string[]) {
         }
         const search = `%${input.search.replace(/[\\%_]/g, '\\$&')}%`;
         const cpfSearch = /^[\d.\-\s]+$/.test(input.search) ? input.search.replace(/\D/g, '') : '';
-        const rows = await tx.$queryRaw<Lead[]>`
-        select id,name,email,phone,plan,status,"funnelStep","lastActivityAt","createdAt","paymentStatus","paymentAmount","paidAt","pagbankCheckoutId","ownerId",version,
+        const rows = await tx.$queryRaw<(Lead & { plan: string | null; partnerCount: number })[]>`
+        select jsonb_array_length(partners) as "partnerCount",id,name,email,phone,plan,status,"funnelStep","lastActivityAt","createdAt","paymentStatus","paymentAmount","paidAt","pagbankCheckoutId","ownerId",version,
         case when exists(select 1 from concloud."OpeningProcess" p where p."leadId"=concloud."OpeningLead".id) then 'OPERATION' when "paymentStatus"='PAID' then 'PAID' when status='DRAFT' then 'STARTED' when "pagbankCheckoutId" is not null then 'WAITING_PAYMENT' else 'REGISTERED' end as "commercialStage", coalesce("pagbankPaymentId"='TEST_BYPASS',false) as "testPayment"
         from concloud."OpeningLead"
         where (${input.search}='' or name ilike ${search} or email ilike ${search} or (${cpfSearch}<>'' and cpf like ${`%${cpfSearch}%`}))
@@ -169,7 +170,15 @@ export async function internalOpening(request: Request, path: string[]) {
                 JSON.stringify({ createdAt: last.createdAt.toISOString(), id: last.id, filter }),
               ).toString('base64url')
             : null;
-        return { items, nextCursor, observedAt: new Date().toISOString() };
+        const progress = await documentProgressForLeads(tx, items, staff.documents);
+        return {
+          items: items.map((lead, index) => ({
+            ...lead,
+            documentProgress: progress[index],
+          })),
+          nextCursor,
+          observedAt: new Date().toISOString(),
+        };
       }
       const id = uuid.parse(path[1]);
       const lead = await leadById(tx, id);
