@@ -18,7 +18,7 @@ Supabase `auth.getUser()` valida a identidade no servidor. `getAuthenticatorAssu
 
 Cada transação Prisma SERIALIZABLE recebe `app.user_id` e e-mail da identidade validada via `set_config(..., true)`. `scoped()` carrega Company sob RLS, deriva organização do registro e busca a membership real. O ID enviado pelo navegador é apenas um seletor, nunca evidência de permissão. Um org admin administra somente sua organização; contador/assistente/cliente precisam de concessão na empresa. SUPER_ADMIN foi mantido como papel administrativo **com escopo de organização**, sem bypass global.
 
-Runtime `concloud_runtime` é NOBYPASSRLS/NOSUPERUSER; a aplicação recusa credenciais privilegiadas. Todas as tabelas têm ENABLE e FORCE RLS. Funções auxiliares são SECURITY INVOKER; não existe SECURITY DEFINER. Tabelas ficam fora da Data API. Não há grant a anon/authenticated. Não adicionar `concloud` aos schemas expostos.
+Runtime `concloud_runtime` é NOBYPASSRLS/NOSUPERUSER; a aplicação recusa credenciais privilegiadas. Todas as tabelas têm ENABLE e FORCE RLS. Funções auxiliares do ERP são SECURITY INVOKER; as funções legadas de abertura usam SECURITY DEFINER com grants restritos. A API interna nova usa runtime e RLS; consulte docs/painel-interno-entrega-1.md. Tabelas ficam fora da Data API. Não há grant a anon/authenticated. Não adicionar `concloud` aos schemas expostos.
 
 Convites têm token aleatório 256 bits, só hash no banco, expiração e uso único. A aceitação exige identidade com mesmo e-mail; a política permite inserir membership apenas com papel/empresa do convite ainda válido. Credenciais do runtime continuam sendo um limite de confiança: quem comprometer o servidor e sua conexão pode definir contexto. Não se afirma proteção contra administrador da infraestrutura.
 
@@ -45,3 +45,7 @@ Demonstração local exige DEMO_MODE, NODE_ENV diferente de production e DB loca
 Consultadas em 05/10/2026: [Next.js](https://nextjs.org/docs/app/getting-started/installation), documentação instalada `node_modules/next/dist/docs`, [Supabase SSR](https://supabase.com/docs/guides/auth/server-side/creating-a-client), [MFA](https://supabase.com/docs/guides/auth/auth-mfa/totp), [changelog](https://supabase.com/changelog.md), [Prisma 7](https://www.prisma.io/docs/guides/upgrade-prisma-orm/v7), [BullMQ](https://docs.bullmq.io), [shadcn](https://ui.shadcn.com/docs), [CNPJ oficial](https://www.gov.br/receitafederal/pt-br/centrais-de-conteudo/publicacoes/documentos-tecnicos/cnpj/manual-dv-cnpj.pdf).
 
 Next 16.3.8, React 19.3.0, Prisma 7.10.0 (8 era RC), Supabase JS 2.117.2/SSR 0.12.7; versões completas no package-lock. Ferramenta opcional embedded-postgres tem etiqueta beta upstream, só usada em desenvolvimento; produção usa PostgreSQL/Supabase. Atualização recente do Postgres sobre ltree/pgcrypto não afeta esta modelagem, que não usa essas extensões.
+
+## Atualização — painel interno (26/10/2026)
+
+[Estado implementado e histórico remoto real](painel-interno-entrega-1.md). A produção usa histórico Supabase preexistente; não executar Prisma deploy remoto sem reconciliar esse histórico.

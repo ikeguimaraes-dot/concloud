@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { it, expect } from 'vitest';
+import { readdir } from 'node:fs/promises';
 import { Pool } from 'pg';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -34,7 +35,9 @@ it.skipIf(!local)(
             'SELECT count(*)::int AS n FROM concloud._prisma_migrations WHERE finished_at IS NOT NULL',
           )
         ).rows[0].n,
-      ).toBe(10);
+      ).toBe(
+        (await readdir('packages/database/migrations')).filter((name) => /^\d/.test(name)).length,
+      );
       expect(
         (
           await db.query(

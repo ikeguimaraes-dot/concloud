@@ -229,7 +229,8 @@ export default function OpenCompany() {
           step: Math.min(step + 1, 4),
         }),
       });
-      if (!response.ok) throw new Error();
+      const result = (await response.json()) as { persisted?: boolean };
+      if (!response.ok || !result.persisted) throw new Error();
       setStep((current) => current + 1);
     } catch {
       setError('Não foi possível salvar seu progresso agora. Tente novamente.');

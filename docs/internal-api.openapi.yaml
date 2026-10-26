@@ -1,0 +1,121 @@
+openapi: 3.1.0
+info:
+  title: ConCloud Internal Opening API
+  version: 1.0.0
+  description: Equipe ativa, AAL2 e escopo do escritório ConCloud. Respostas privadas sem cache.
+servers:
+  - url: /api/internal/v1
+security:
+  - operatorToken: []
+paths:
+  /me:
+    get:
+      summary: Identidade validada e permissões efetivas
+      responses:
+        '200':
+          {
+            description: user (id,
+            email,
+            name),
+            permissions (readAll,
+            documents,
+            assign,
+            admin),
+            office,
+          }
+        '401': { description: Token inválido }
+        '403': { description: MFA_REQUIRED ou equipe inativa/sem concessão }
+  /staff:
+    get:
+      summary: Responsáveis elegíveis visíveis ao administrador
+      responses:
+        '200': { description: items com userId e displayName }
+        '403': { description: Sem permissão de atribuição }
+  /leads:
+    get:
+      summary: Cadastros persistidos incluindo DRAFT e não pagos, sob RLS
+      parameters:
+        - { name: search, in: query, schema: { type: string, maxLength: 120 } }
+        - {
+            name: plan,
+            in: query,
+            schema: { type: string, enum: [mei, essencial, gestao, proximo] },
+          }
+        - {
+            name: status,
+            in: query,
+            schema: { type: string, enum: [DRAFT, NEW, CONTACTED, QUALIFIED, CLOSED] },
+          }
+        - {
+            name: paymentStatus,
+            in: query,
+            schema:
+              {
+                type: string,
+                enum: [PENDING, WAITING, IN_ANALYSIS, PAID, DECLINED, CANCELED, EXPIRED],
+              },
+          }
+        - { name: ownerId, in: query, schema: { type: string }, description: UUID ou unassigned }
+        - { name: cursor, in: query, schema: { type: string } }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 25 },
+          }
+      responses:
+        '200': { description: 'items, nextCursor e observedAt; ordem createdAt DESC, id DESC' }
+        '422': { description: Filtros ou cursor inválidos }
+  /leads/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      summary: Ficha com campos captados, cobrança inicial, responsável e últimos 30 eventos
+      responses:
+        '200':
+          {
+            description: 'Campos de OpeningLead permitidos, version e events; sem token de draft ou URLs de checkout',
+          }
+        '404': { description: Não encontrado ou fora do escopo }
+  /leads/{id}/assignment:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      summary: Atribuição persistida com versão otimista e auditoria atômica
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [ownerId, expectedVersion]
+              properties:
+                ownerId: { type: [string, 'null'], format: uuid }
+                expectedVersion: { type: integer, minimum: 1 }
+      responses:
+        '200': { description: id, ownerId e nova version }
+        '409': { description: Conflito concorrente, atualizar ficha }
+        '422': { description: Responsável inválido ou fora da equipe }
+  /leads/{id}/documents:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      summary: Metadados dos documentos atuais, sem aprovação ou versões inventadas
+      responses:
+        '200': { description: 'items (id, kind, filename, mime, size, uploadedAt), submittedAt' }
+        '403': { description: Sem concessão documental }
+  /leads/{id}/documents/{documentId}/download:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: documentId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      summary: Autoriza objeto privado e registra concessão de download
+      responses:
+        '200': { description: url assinada por 60 segundos e expiresAt }
+        '404': { description: Arquivo não encontrado ou fora do escopo }
+components:
+  securitySchemes:
+    operatorToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

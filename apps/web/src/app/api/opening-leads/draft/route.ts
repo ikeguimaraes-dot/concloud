@@ -42,7 +42,14 @@ export async function POST(request: Request) {
     // Keep the opening flow usable while the additive draft migration is being rolled out.
     // The final submission still persists every field through the legacy function.
     if (!capability?.available)
-      return Response.json({ ok: true, persisted: false }, { status: 202 });
+      return Response.json(
+        {
+          ok: false,
+          persisted: false,
+          error: 'Não foi possível salvar seu progresso. Tente novamente.',
+        },
+        { status: 503 },
+      );
 
     const rows = await database().$queryRaw<Array<{ id: string }>>`
       select concloud.save_opening_lead_draft(
@@ -71,7 +78,14 @@ export async function POST(request: Request) {
     );
 
     if (!validationError && !rateLimitError)
-      return Response.json({ ok: true, persisted: false }, { status: 202 });
+      return Response.json(
+        {
+          ok: false,
+          persisted: false,
+          error: 'Não foi possível salvar seu progresso. Tente novamente.',
+        },
+        { status: 503 },
+      );
 
     return Response.json(
       {
