@@ -115,7 +115,19 @@ paths:
         '404': { description: Arquivo não encontrado ou fora do escopo }
   /processes:
     get:
-      summary: 'Quadro paginado: workflow e offset; items, nextOffset, workflows, returns'
+      summary: 'Quadro paginado e busca de cliente; items, nextOffset, workflows, returns'
+      parameters:
+        - name: workflow
+          in: query
+          schema: { type: string, enum: ['', MEI, JUCESP, TRIAGE], default: '' }
+          description: Vazio retorna todos os fluxos.
+        - name: search
+          in: query
+          schema: { type: string, maxLength: 120 }
+          description: Nome, e-mail, CPF ou ID do processo; filtro literal antes da paginação e sujeito a RLS.
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, maximum: 100000, default: 0 }
       responses:
         '200': { description: Resultado autorizado e persistido }
         '403': { description: Sem concessão }
@@ -123,7 +135,8 @@ paths:
         '409': { description: Versão concorrente }
         '422': { description: Dados ou requisitos pendentes }
     post:
-      summary: 'Encaminhamento idempotente: leadId e workflow MEI ou JUCESP'
+      deprecated: true
+      summary: 'Compatibilidade: retorna processo existente; novos pagamentos são encaminhados automaticamente'
       responses:
         '200': { description: Resultado autorizado e persistido }
         '403': { description: Sem concessão }
@@ -145,7 +158,7 @@ paths:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
     post:
-      summary: 'Transição com targetStage, expectedVersion, situation, reason, checked, protocol e cnpj'
+      summary: 'Transição com targetStage, expectedVersion, situation, reason, checked, protocol, cnpj e mode (manual ou drag)'
       responses:
         '200': { description: Resultado autorizado e persistido }
         '403': { description: Sem concessão }

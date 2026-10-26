@@ -1,4 +1,10 @@
 export const workflows = {
+  TRIAGE: [
+    [
+      'Recepção e triagem',
+      'Rota pendente de definição: conferir plano e UF antes de iniciar o fluxo operacional',
+    ],
+  ],
   JUCESP: [
     [
       'Recepção e triagem',
@@ -33,7 +39,7 @@ export const workflows = {
     ],
   ],
   MEI: [
-    ['Recepção', 'Titular e atividade do empreendimento conferidos'],
+    ['Recepção e triagem', 'Titular e atividade do empreendimento conferidos'],
     [
       'Validação de dados e documentos',
       'Os cinco documentos do titular e empreendimento foram validados',

@@ -284,3 +284,193 @@ it('assinatura anterior ao retorno não libera novo protocolo', async () => {
     }),
   ).rejects.toMatchObject({ code: 'BLOCKED' });
 });
+
+it('encaminha pagamento sem responsável, preserva etapa em retries e pesquisa antes de paginar', async () => {
+  const result = await db.query<{ id: string }>(
+    'select concloud.save_opening_lead_draft($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) as id',
+    [
+      'c'.repeat(64),
+      'Cliente busca automática',
+      '00000000001',
+      'search@example.invalid',
+      '000000000',
+      2,
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      false,
+    ],
+  );
+  const id = result.rows[0].id;
+  await db.query("update concloud.\"OpeningLead\" set plan='essencial',state='SP' where id=$1", [
+    id,
+  ]);
+  expect(
+    (await db.query('select id from concloud."OpeningProcess" where "leadId"=$1', [id])).rows,
+  ).toHaveLength(0);
+  // Exercise the exact restricted-runtime function used by the authenticated payment webhook.
+  await asActor(() =>
+    db.query(
+      "select concloud.update_opening_lead_payment($1,null,'PAID','TEST_BYPASS',null,null)",
+      [id],
+    ),
+  );
+  const p = (
+    await db.query<{ id: string; stage: number; workflow: string }>(
+      'select * from concloud."OpeningProcess" where "leadId"=$1',
+      [id],
+    )
+  ).rows[0];
+  expect(p).toMatchObject({ stage: 1, workflow: 'JUCESP' });
+  const event = (
+    await db.query<{ actorId: string | null; evidence: { testPayment: boolean } }>(
+      'select * from concloud."OpeningProcessEvent" where "processId"=$1',
+      [p.id],
+    )
+  ).rows[0];
+  expect(event.actorId).toBeNull();
+  expect(event.evidence.testPayment).toBe(true);
+  await db.query('update concloud."OpeningProcess" set stage=2,version=2 where id=$1', [p.id]);
+  await asActor(() =>
+    db.query(
+      "select concloud.update_opening_lead_payment($1,null,'PAID','TEST_BYPASS',null,null)",
+      [id],
+    ),
+  );
+  expect(
+    (await db.query('select stage,version from concloud."OpeningProcess" where id=$1', [p.id]))
+      .rows[0],
+  ).toEqual({ stage: 2, version: 2 });
+  expect(
+    (await db.query('select id from concloud."OpeningProcessEvent" where "processId"=$1', [p.id]))
+      .rows,
+  ).toHaveLength(1);
+  const found = (await asActor(() =>
+    operations(
+      tx,
+      actor,
+      staff,
+      new Request('https://example.invalid?search=search%40example.invalid'),
+      ['processes'],
+    ),
+  )) as { items: { id: string; testPayment: boolean }[] };
+  expect(found.items).toHaveLength(1);
+  expect(found.items[0]).toMatchObject({ id: p.id, testPayment: true });
+  const absent = (await asActor(() =>
+    operations(tx, actor, staff, new Request('https://example.invalid?search=%25'), ['processes']),
+  )) as { items: unknown[] };
+  expect(absent.items).toHaveLength(0); // '%' is literal, not an unrestricted LIKE wildcard.
+  expect(
+    (
+      await asActor(
+        () => db.query('select id from concloud."OpeningProcess" where id=$1', [p.id]),
+        client,
+      )
+    ).rows,
+  ).toHaveLength(0);
+});
+
+it('backfill recebe pagamentos antigos e deixa UF indefinida somente na triagem', async () => {
+  const id = (
+    await db.query<{ id: string }>(
+      'select concloud.save_opening_lead_draft($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) as id',
+      [
+        'd'.repeat(64),
+        'Cadastro antigo',
+        '00000000002',
+        'old@example.invalid',
+        '000000000',
+        2,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        false,
+      ],
+    )
+  ).rows[0].id;
+  await db.exec('alter table concloud."OpeningLead" disable trigger opening_dispatch_paid');
+  await db.query('update concloud."OpeningLead" set "paymentStatus"=\'PAID\' where id=$1', [id]);
+  await db.exec('alter table concloud."OpeningLead" enable trigger opening_dispatch_paid');
+  const migration = await readFile(
+    'packages/database/migrations/20261026212320_opening_automatic_dispatch/migration.sql',
+    'utf8',
+  );
+  const backfill = migration.slice(migration.indexOf('with created as'));
+  await db.exec(backfill);
+  await db.exec(backfill);
+  const p = (
+    await db.query<{ id: string }>('select * from concloud."OpeningProcess" where "leadId"=$1', [
+      id,
+    ])
+  ).rows[0];
+  expect(p).toMatchObject({ workflow: 'TRIAGE', stage: 1 });
+  expect(
+    (await db.query('select id from concloud."OpeningProcessEvent" where "processId"=$1', [p.id]))
+      .rows,
+  ).toHaveLength(1);
+  await expect(
+    call(['processes', p.id, 'transitions'], {
+      targetStage: 1,
+      expectedVersion: 1,
+      situation: 'DONE',
+      checked: true,
+      reason: 'Tentativa sintética',
+    }),
+  ).rejects.toMatchObject({ code: 'BLOCKED' });
+});
+
+it('arrastar reutiliza apenas checklist explicitamente salvo na versão atual', async () => {
+  const id = (
+    await db.query<{ id: string }>(
+      'select concloud.save_opening_lead_draft($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) as id',
+      [
+        'e'.repeat(64),
+        'Drag sintético',
+        '00000000003',
+        'drag@example.invalid',
+        '000000000',
+        2,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        false,
+      ],
+    )
+  ).rows[0].id;
+  await db.query(
+    'update concloud."OpeningLead" set plan=\'mei\',"paymentStatus"=\'PAID\' where id=$1',
+    [id],
+  );
+  const p = (
+    await db.query<{ id: string }>('select id from concloud."OpeningProcess" where "leadId"=$1', [
+      id,
+    ])
+  ).rows[0];
+  const move = (targetStage: number, expectedVersion: number, mode: string, checked = false) =>
+    call(['processes', p.id, 'transitions'], {
+      targetStage,
+      expectedVersion,
+      mode,
+      checked,
+      situation: 'IN_PROGRESS',
+      reason: 'Movimentação sintética',
+    });
+  await expect(move(2, 1, 'drag', true)).rejects.toMatchObject({ code: 'BLOCKED' });
+  await move(1, 1, 'manual', true);
+  await move(2, 2, 'drag');
+  await move(1, 3, 'manual');
+  await expect(move(2, 4, 'drag')).rejects.toMatchObject({ code: 'BLOCKED' });
+  expect(
+    (await db.query('select stage,version from concloud."OpeningProcess" where id=$1', [p.id]))
+      .rows[0],
+  ).toEqual({ stage: 1, version: 4 });
+});

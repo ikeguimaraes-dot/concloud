@@ -40,13 +40,14 @@ export async function operations(
     const params = new URL(request.url).searchParams;
     const input = z
       .object({
-        workflow: z.enum(['', 'MEI', 'JUCESP']).default(''),
+        workflow: z.enum(['', 'MEI', 'JUCESP', 'TRIAGE']).default(''),
+        search: z.string().trim().max(120).default(''),
         offset: z.coerce.number().int().min(0).max(100000).default(0),
       })
       .parse(Object.fromEntries(params));
     const items = await tx.$queryRaw<
       Process[]
-    >`select p.*,l.name,l.plan,l."ownerId",l."paymentStatus",(select s."displayName" from concloud."OpeningStaff" s where s."userId"=l."ownerId" and s."organizationId"=l."organizationId") as "ownerName" from concloud."OpeningProcess" p join concloud."OpeningLead" l on l.id=p."leadId" where (${input.workflow}='' or p.workflow=${input.workflow}) order by p."createdAt" desc,p.id desc limit 51 offset ${input.offset}`;
+    >`select p.*,l.name,l.plan,l."ownerId",l."paymentStatus",coalesce(l."pagbankPaymentId"='TEST_BYPASS',false) as "testPayment",(select s."displayName" from concloud."OpeningStaff" s where s."userId"=l."ownerId" and s."organizationId"=l."organizationId") as "ownerName" from concloud."OpeningProcess" p join concloud."OpeningLead" l on l.id=p."leadId" where (${input.workflow}='' or p.workflow=${input.workflow}) and (${input.search}='' or position(lower(${input.search}) in lower(concat_ws(' ',l.name,l.email,l.cpf,p.id::text)))>0) order by p."createdAt" desc,p.id desc limit 51 offset ${input.offset}`;
     return {
       items: items.slice(0, 50),
       nextOffset: items.length > 50 ? input.offset + 50 : null,
@@ -75,6 +76,10 @@ export async function operations(
       }[]
     >`select plan,"ownerId","paymentStatus",state,status from concloud."OpeningLead" where id=${input.leadId}::uuid`;
     if (!lead) throw new AppError('NOT_FOUND', 'Cadastro não encontrado.', 404);
+    const [existing] = await tx.$queryRaw<
+      Process[]
+    >`select * from concloud."OpeningProcess" where "leadId"=${input.leadId}::uuid`;
+    if (existing) return existing;
     if (lead.paymentStatus !== 'PAID' || !lead.ownerId || lead.status === 'DRAFT')
       throw new AppError(
         'BLOCKED',
@@ -128,6 +133,7 @@ export async function operations(
   if (path.length === 3 && path[2] === 'transitions' && method === 'POST') {
     const input = z
       .object({
+        mode: z.enum(['manual', 'drag']).default('manual'),
         targetStage: z.number().int().min(1).max(16),
         expectedVersion: z.number().int().positive(),
         situation,
@@ -146,6 +152,29 @@ export async function operations(
         'Processo encerrado. Reabertura precisa de análise administrativa.',
         422,
       );
+    if (p.workflow === 'TRIAGE' && (input.targetStage !== 1 || input.situation === 'DONE'))
+      throw new AppError(
+        'BLOCKED',
+        'Defina a rota de atendimento antes de avançar ou encerrar.',
+        422,
+      );
+    // Drag can reuse an explicit checklist saved at the current process version.
+    // A stale checklist from before a return or another operator's change is never reused.
+    if (input.mode === 'drag') {
+      const [saved] = await tx.$queryRaw<
+        {
+          evidence: {
+            checked?: boolean;
+            protocol?: string;
+            cnpj?: string;
+            processVersion?: number;
+          };
+        }[]
+      >`select evidence from concloud."OpeningProcessEvent" where "processId"=${id}::uuid and "fromStage"=${p.stage} and "toStage"=${p.stage} and (evidence->>'processVersion')::integer=${p.version} order by "createdAt" desc,id desc limit 1`;
+      input.checked = saved?.evidence.checked === true;
+      input.protocol = saved?.evidence.protocol ?? '';
+      input.cnpj = saved?.evidence.cnpj ?? '';
+    }
     const moving = input.targetStage !== p.stage;
     if (moving && !allowedTransition(p.workflow, p.stage, input.targetStage))
       throw new AppError('TRANSITION', 'Avance uma etapa por vez ou use o retorno previsto.', 422);
@@ -219,7 +248,7 @@ export async function operations(
       Process[]
     >`update concloud."OpeningProcess" set stage=${input.targetStage},situation=${input.situation},version=version+1 where id=${id}::uuid and version=${input.expectedVersion} returning *`;
     if (!changed[0]) throw new AppError('CONFLICT', 'Atualize o processo.', 409);
-    await tx.$executeRaw`insert into concloud."OpeningProcessEvent"("processId","actorId","fromStage","toStage",situation,reason,evidence) values(${id}::uuid,${actor.id}::uuid,${p.stage},${input.targetStage},${input.situation},${input.reason},${JSON.stringify({ checked: input.checked, protocol: input.protocol, cnpj: input.cnpj, workflowVersion: 1 })}::jsonb)`;
+    await tx.$executeRaw`insert into concloud."OpeningProcessEvent"("processId","actorId","fromStage","toStage",situation,reason,evidence) values(${id}::uuid,${actor.id}::uuid,${p.stage},${input.targetStage},${input.situation},${input.reason},${JSON.stringify({ checked: input.checked, protocol: input.protocol, cnpj: input.cnpj, workflowVersion: 1, processVersion: changed[0].version })}::jsonb)`;
     return changed[0];
   }
   if (path[2] === 'tasks' && path.length === 3 && method === 'POST') {

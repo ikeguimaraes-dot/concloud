@@ -73,13 +73,19 @@ export async function POST(request: Request) {
     if (!status || !paymentStatuses.has(status) || (!leadId && !checkoutId))
       return new Response(null, { status: 204 });
 
-    if (status === 'PAID' && leadId) await notifyOpeningPaymentConfirmed(leadId);
     await database().$executeRaw`
       select concloud.update_opening_lead_payment(
         ${leadId}::uuid, ${checkoutId ?? null}, ${status}, ${charge?.id ?? null},
         ${event.subscriptions?.[0]?.id ?? null},
         ${charge?.paid_at ? new Date(charge.paid_at) : null}
       )`;
+    if (status === 'PAID' && leadId) {
+      try {
+        await notifyOpeningPaymentConfirmed(leadId);
+      } catch {
+        console.error(JSON.stringify({ event: 'pagbank.notification.failed' }));
+      }
+    }
     return new Response(null, { status: 204 });
   } catch {
     console.error(JSON.stringify({ event: 'pagbank.webhook.failed', code: 'PROCESSING_ERROR' }));

@@ -153,7 +153,7 @@ export async function internalOpening(request: Request, path: string[]) {
         const cpfSearch = /^[\d.\-\s]+$/.test(input.search) ? input.search.replace(/\D/g, '') : '';
         const rows = await tx.$queryRaw<Lead[]>`
         select id,name,email,phone,plan,status,"funnelStep","lastActivityAt","createdAt","paymentStatus","paymentAmount","paidAt","pagbankCheckoutId","ownerId",version,
-        case when exists(select 1 from concloud."OpeningProcess" p where p."leadId"=concloud."OpeningLead".id) then 'OPERATION' when "paymentStatus"='PAID' then 'PAID' when status='DRAFT' then 'STARTED' when "pagbankCheckoutId" is not null then 'WAITING_PAYMENT' else 'REGISTERED' end as "commercialStage"
+        case when exists(select 1 from concloud."OpeningProcess" p where p."leadId"=concloud."OpeningLead".id) then 'OPERATION' when "paymentStatus"='PAID' then 'PAID' when status='DRAFT' then 'STARTED' when "pagbankCheckoutId" is not null then 'WAITING_PAYMENT' else 'REGISTERED' end as "commercialStage", coalesce("pagbankPaymentId"='TEST_BYPASS',false) as "testPayment"
         from concloud."OpeningLead"
         where (${input.search}='' or name ilike ${search} or email ilike ${search} or (${cpfSearch}<>'' and cpf like ${`%${cpfSearch}%`}))
         and (${input.plan}='' or plan=${input.plan}) and (${input.status}='' or status=${input.status})
