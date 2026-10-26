@@ -8,7 +8,7 @@ Implementação iniciada por autorização do usuário em 26/10/2026. Login cont
 - Encaminhamento manual, idempotente por lead, exige cadastro concluído, pagamento confirmado e responsável. Nenhum processo é criado automaticamente no rollout ou pelo webhook. Isso adota provisoriamente a proposta do manual; a consulta ao responsável sobre triagem anterior ao pagamento continua pendente.
 - O operador escolhe MEI ou SP/JUCESP ao encaminhar. A API confere plano e UF. A rota JUCESP deve ser confirmada na triagem (EI/LTDA e aplicabilidade); rotas especiais ficam fora dessa esteira.
 - Fluxos versão 1: 16 etapas JUCESP e 7 MEI, com retorno documentado. Não há relógio de SLA nem cálculo de prazo legal nesta entrega.
-- Operadores com acesso a documentos dos cadastros atribuídos podem revisar e operar suas etapas. Não recebem administração de equipe por isso. A Vitória será vinculada como operadora após confirmar o e-mail exato; não existe identidade correspondente a nenhuma das duas grafias consultadas.
+- Operadores com acesso a documentos dos cadastros atribuídos podem revisar e operar suas etapas. Não recebem administração de equipe por isso. Vitória Mariano foi cadastrada em 26/10/2026 após confirmação do endereço `vitoria.mariano@oscpaulistana.com.br`. Perfil ASSISTANT ativo, documentos dos cadastros atribuídos, sem readAll/canAssign/admin. Login real validado e sessão de verificação encerrada. Credenciais entregues somente em arquivo local privado, fora do Git. Nenhum cadastro existente foi atribuído automaticamente.
 
 ## Implementado
 
