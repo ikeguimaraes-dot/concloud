@@ -526,3 +526,112 @@ it('resumo de documentos conta só arquivos atuais autorizados e respeita altera
     { status: 'available', required: 5, uploaded: 0, missing: 5 },
   ]);
 });
+
+it('pendências filtram antes da paginação, respeitam acesso e desaparecem após resolução', async () => {
+  const { pendingWork } = await import('../apps/web/src/lib/internal-pending');
+  const id = (
+    await db.query<{ id: string }>(
+      'select concloud.save_opening_lead_draft($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) as id',
+      [
+        '1'.repeat(64),
+        'Pendência exclusiva',
+        '00000000005',
+        'pending@example.invalid',
+        '000000000',
+        2,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        false,
+      ],
+    )
+  ).rows[0].id;
+  await db.query(
+    'update concloud."OpeningLead" set plan=\'mei\',partners=\'[{"name":"Titular"}]\'::jsonb,"ownerId"=$2,"paymentStatus"=\'PAID\' where id=$1',
+    [id, actor.id],
+  );
+  const process = (
+    await db.query<{ id: string }>('select id from concloud."OpeningProcess" where "leadId"=$1', [
+      id,
+    ])
+  ).rows[0].id;
+  await db.query(
+    "insert into concloud.\"OpeningProcessTask\"(\"processId\",title,\"ownerId\",\"dueAt\",completed) values($1,'Tarefa vencida',$2,now()-interval '1 day',false),($1,'Tarefa futura',$2,now()+interval '1 day',false),($1,'Tarefa concluída',$2,now()-interval '2 days',true),($1,'Sem prazo',$2,null,false)",
+    [process, actor.id],
+  );
+  const query = (params = '', who = actor.id) =>
+    asActor(
+      () =>
+        pendingWork(
+          tx,
+          new Request(`https://example.invalid?search=pending%40example.invalid&${params}`),
+          true,
+        ),
+      who,
+    );
+  let result = await query('kind=OVERDUE');
+  expect(result.items).toHaveLength(1);
+  expect(result.items[0]).toMatchObject({
+    id,
+    missingDocs: 5,
+    requiredDocs: 5,
+    overdueTasks: 1,
+    total: 1,
+  });
+  expect((await query(`ownerId=${actor.id}`)).items).toHaveLength(1);
+  expect((await query('ownerId=unassigned')).items).toHaveLength(0);
+  expect((await query('kind=DETAILS')).items).toHaveLength(0);
+  expect((await query('', client)).items).toHaveLength(0);
+  await expect(
+    asActor(() => pendingWork(tx, new Request('https://example.invalid'), false)),
+  ).rejects.toMatchObject({ status: 403 });
+  await db.query(
+    'update concloud."OpeningProcessTask" set completed=true where "processId"=$1 and "dueAt"<now()',
+    [process],
+  );
+  expect((await query('kind=OVERDUE')).items).toHaveLength(0);
+  expect((await query('kind=DOCUMENTS')).items).toHaveLength(1);
+  for (const kind of requiredDocumentKinds(1, true))
+    await db.query(
+      'insert into concloud."OpeningLeadDocument"("openingLeadId",kind,filename,mime,size,bucket,"objectKey") values($1,$2,\'synthetic.pdf\',\'application/pdf\',12,\'concloud-private\',$3)',
+      [id, kind, `opening-leads/${id}/${kind}/v1`],
+    );
+  expect((await query()).items).toHaveLength(0);
+  await db.query('update concloud."OpeningProcessTask" set completed=false where "processId"=$1', [
+    process,
+  ]);
+  await db.query('update concloud."OpeningProcess" set situation=\'DONE\' where id=$1', [process]);
+  expect((await query()).items).toHaveLength(0);
+  result = await asActor(() =>
+    pendingWork(tx, new Request('https://example.invalid?kind=DETAILS'), true),
+  );
+  expect(result.items.every((row) => row.missingDocs === null)).toBe(true);
+});
+
+it('pendências paginam toda a busca autorizada sem limitar o filtro à primeira página', async () => {
+  const { pendingWork } = await import('../apps/web/src/lib/internal-pending');
+  await db.query(
+    `select concloud.save_opening_lead_draft(md5('pending-page-'||i)||md5('pending-page-'||i),'Fila paginada '||i,lpad((100+i)::text,11,'0'),'page'||i||'@example.invalid','000000000',2,'','','','','','',false) from generate_series(1,52) i`,
+  );
+  const get = (offset: number) =>
+    asActor(() =>
+      pendingWork(
+        tx,
+        new Request(
+          `https://example.invalid?search=Fila%20paginada&kind=DETAILS&ownerId=unassigned&offset=${offset}`,
+        ),
+        true,
+      ),
+    );
+  const first = await get(0),
+    second = await get(50);
+  expect(first.items).toHaveLength(50);
+  expect(first.items[0].total).toBe(52);
+  expect(first.nextOffset).toBe(50);
+  expect(second.items).toHaveLength(2);
+  expect(second.nextOffset).toBeNull();
+  expect(new Set([...first.items, ...second.items].map((row) => row.id)).size).toBe(52);
+});

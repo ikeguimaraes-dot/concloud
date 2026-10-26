@@ -31,6 +31,20 @@ paths:
       responses:
         '200': { description: items com userId e displayName }
         '403': { description: Sem permissão de atribuição }
+  /pending:
+    get:
+      summary: Fila autorizada de documentos faltantes e tarefas vencidas
+      description: Filtra antes da paginação. Requer acesso documental. Processos encerrados são excluídos; prazos são internos. Cada item inclui total do filtro, missingDocs/requiredDocs nullable e overdueTasks.
+      parameters:
+        - { name: ownerId, in: query, schema: { type: string }, description: UUID do responsável atual ou unassigned; vazio consulta todo o escopo autorizado. }
+        - { name: kind, in: query, schema: { type: string, enum: [ALL, DOCUMENTS, OVERDUE, DETAILS], default: ALL } }
+        - { name: search, in: query, schema: { type: string, maxLength: 120 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 100000, default: 0 } }
+      responses:
+        '200': { description: items (até 50), nextOffset e observedAt }
+        '401': { description: Sessão ausente ou inválida }
+        '403': { description: Sem concessão documental }
+        '422': { description: Filtro inválido }
   /leads:
     get:
       summary: Cadastros persistidos incluindo DRAFT e não pagos, sob RLS

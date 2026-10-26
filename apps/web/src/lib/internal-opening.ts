@@ -1,4 +1,5 @@
 import 'server-only';
+import { pendingWork } from './internal-pending';
 import { operations } from './internal-operations';
 import { documentProgressForLeads } from './opening-document-progress';
 import { createClient } from '@supabase/supabase-js';
@@ -105,6 +106,8 @@ export async function internalOpening(request: Request, path: string[]) {
         >`select "userId","displayName" from concloud."OpeningStaff" where "organizationId"=${staff.organizationId}::uuid and active order by "displayName","userId"`;
         return { items };
       }
+      if (method === 'GET' && path.join('/') === 'pending')
+        return pendingWork(tx, request, staff.documents);
       if (path[0] === 'processes') return operations(tx, actor, staff, request, path);
       if (path[0] !== 'leads') throw new AppError('NOT_FOUND', 'Recurso não encontrado.', 404);
       if (path.length === 1 && method === 'GET') {
