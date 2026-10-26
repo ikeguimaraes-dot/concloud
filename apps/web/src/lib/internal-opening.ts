@@ -148,10 +148,11 @@ export async function internalOpening(request: Request, path: string[]) {
             throw new AppError('INVALID_CURSOR', 'Atualize a busca.', 422);
         }
         const search = `%${input.search.replace(/[\\%_]/g, '\\$&')}%`;
+        const cpfSearch = /^[\d.\-\s]+$/.test(input.search) ? input.search.replace(/\D/g, '') : '';
         const rows = await tx.$queryRaw<Lead[]>`
         select id,name,email,phone,plan,status,"funnelStep","lastActivityAt","createdAt","paymentStatus","paymentAmount","paidAt","pagbankCheckoutId","ownerId",version
         from concloud."OpeningLead"
-        where (${input.search}='' or name ilike ${search} or email ilike ${search} or cpf ilike ${search})
+        where (${input.search}='' or name ilike ${search} or email ilike ${search} or (${cpfSearch}<>'' and cpf like ${`%${cpfSearch}%`}))
         and (${input.plan}='' or plan=${input.plan}) and (${input.status}='' or status=${input.status})
         and (${input.paymentStatus}='' or "paymentStatus"=${input.paymentStatus})
         and (${input.ownerId}='' or (${input.ownerId}='unassigned' and "ownerId" is null) or "ownerId"::text=${input.ownerId})

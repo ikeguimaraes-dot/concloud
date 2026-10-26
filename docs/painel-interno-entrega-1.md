@@ -33,3 +33,7 @@ A conexão administrativa MCP não permite SET ROLE concloud_runtime; não foram
 Kanban, revisão por versão, SLAs, mensageria, recorrência conciliada e administração visual de novos funcionários ficam para as próximas entregas. O índice único CPF e o webhook legado permanecem; não automatizar múltiplos processos ou efeitos de pagamento sem tratar esses pontos. Não houve disparo deliberado de mensagens ou cobrança nesta implantação.
 
 Rollback de aplicação preserva colunas e arquivos aditivos. Não remover migrations/dados; para voltar ao portal anterior, sua UI de documentos tem fallback por capacidades. Alterações de grants de atribuição devem ser preservadas. Cadastro/draft legados continuam passando pelas funções existentes.
+
+## Dependências e busca
+
+Next atualizado para 16.4.3 após alerta de audit no build; Zod atualizado para 4.6.7 e correções compatíveis de fast-uri/Vite no lockfile. Audit final sem vulnerabilidades reportadas. Build e testes repetidos após as atualizações. A busca por CPF aceita entrada com ou sem pontuação.
