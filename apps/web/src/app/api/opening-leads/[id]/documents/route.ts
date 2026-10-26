@@ -68,13 +68,20 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     await rateLimit(`opening-documents-status:${actor.id}`, 30);
     const rows = await status(id, actor.id);
     if (!rows.length) return Response.json({ error: 'Cadastro não autorizado.' }, { status: 404 });
-    return Response.json({
-      uploaded: rows.flatMap((row) => (row.kind ? [row.kind] : [])),
-      submitted: Boolean(rows[0]?.submittedAt),
-      partners: rows[0]?.partners ?? [],
-      legacy: rows[0]?.legacy ?? true,
-      plan: rows[0]?.plan,
-    });
+    const reviews = await database().$queryRaw<
+      { kind: string; decision: string; reason: string }[]
+    >`select * from concloud.get_opening_document_reviews(${id}::uuid,${actor.id}::uuid)`;
+    return Response.json(
+      {
+        reviews,
+        uploaded: rows.flatMap((row) => (row.kind ? [row.kind] : [])),
+        submitted: Boolean(rows[0]?.submittedAt) && !reviews.some((r) => r.decision === 'REJECTED'),
+        partners: rows[0]?.partners ?? [],
+        legacy: rows[0]?.legacy ?? true,
+        plan: rows[0]?.plan,
+      },
+      { headers: { 'Cache-Control': 'private, no-store' } },
+    );
   } catch (error) {
     const unauthorized = error instanceof Error && error.message === 'UNAUTHORIZED';
     return Response.json(
@@ -135,6 +142,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       );
     if (!shouldFinalize)
       return Response.json({ ok: true, uploaded: [...uploaded], submitted: false });
+    const reviews = await database().$queryRaw<
+      { decision: string }[]
+    >`select * from concloud.get_opening_document_reviews(${id}::uuid,${actor.id}::uuid)`;
+    if (reviews.some((r) => r.decision === 'REJECTED'))
+      return Response.json(
+        {
+          error: 'Substitua os documentos com correção solicitada antes de finalizar.',
+          uploaded: [...uploaded],
+        },
+        { status: 400 },
+      );
     await database().$executeRaw`
       select concloud.complete_opening_lead_documents(${id}::uuid, ${actor.id}::uuid)`;
     try {

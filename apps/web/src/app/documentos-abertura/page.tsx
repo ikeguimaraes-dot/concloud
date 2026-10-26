@@ -63,6 +63,7 @@ async function responseJson<T>(response: Response): Promise<T> {
 export default function OpeningDocuments() {
   const [plan, setPlan] = useState('');
   const [files, setFiles] = useState<Record<string, File | undefined>>({});
+  const [reviews, setReviews] = useState<{ kind: string; decision: string; reason: string }[]>([]);
   const [uploaded, setUploaded] = useState<string[]>([]);
   const [partners, setPartners] = useState<Partner[]>([
     { name: 'Sócio responsável', cpf: '', percentage: 100 },
@@ -110,6 +111,7 @@ export default function OpeningDocuments() {
           fetch(`/api/opening-leads/${encodeURIComponent(id)}/documents`, { cache: 'no-store' })
             .then(async (documentsResponse) => {
               const documentsResult = (await documentsResponse.json()) as {
+                reviews?: { kind: string; decision: string; reason: string }[];
                 uploaded?: string[];
                 submitted?: boolean;
                 partners?: Partner[];
@@ -117,6 +119,7 @@ export default function OpeningDocuments() {
                 plan?: string;
               };
               if (documentsResponse.ok) {
+                setReviews(documentsResult.reviews ?? []);
                 setPlan(documentsResult.plan ?? '');
                 setUploaded(documentsResult.uploaded ?? []);
                 setSubmitted(Boolean(documentsResult.submitted));
@@ -308,7 +311,10 @@ export default function OpeningDocuments() {
           </div>
           <div className="document-list">
             {documents.map((document) => {
-              const isReady = Boolean(files[document.id]) || uploaded.includes(document.id);
+              const review = reviews.find((r) => r.kind === document.id);
+              const isReady =
+                Boolean(files[document.id]) ||
+                (uploaded.includes(document.id) && review?.decision !== 'REJECTED');
               return (
                 <label
                   className={isReady ? 'document-row complete' : 'document-row'}
@@ -317,6 +323,10 @@ export default function OpeningDocuments() {
                   <span className="document-status">{isReady ? <Check /> : <FileUp />}</span>
                   <span>
                     <b>{document.label}</b>
+                    {review?.decision === 'REJECTED' && (
+                      <small role="alert">Correção solicitada: {review.reason}</small>
+                    )}
+                    {review?.decision === 'APPROVED' && <small>Aprovado pela equipe</small>}
                     <small>
                       {files[document.id]?.name ??
                         (uploaded.includes(document.id) ? 'Enviado anteriormente' : document.hint)}

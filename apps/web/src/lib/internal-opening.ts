@@ -1,4 +1,5 @@
 import 'server-only';
+import { operations } from './internal-operations';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { transaction, type Actor, type Tx } from '@database/client';
@@ -103,6 +104,7 @@ export async function internalOpening(request: Request, path: string[]) {
         >`select "userId","displayName" from concloud."OpeningStaff" where "organizationId"=${staff.organizationId}::uuid and active order by "displayName","userId"`;
         return { items };
       }
+      if (path[0] === 'processes') return operations(tx, actor, staff, request, path);
       if (path[0] !== 'leads') throw new AppError('NOT_FOUND', 'Recurso não encontrado.', 404);
       if (path.length === 1 && method === 'GET') {
         const params = new URL(request.url).searchParams;
@@ -150,7 +152,8 @@ export async function internalOpening(request: Request, path: string[]) {
         const search = `%${input.search.replace(/[\\%_]/g, '\\$&')}%`;
         const cpfSearch = /^[\d.\-\s]+$/.test(input.search) ? input.search.replace(/\D/g, '') : '';
         const rows = await tx.$queryRaw<Lead[]>`
-        select id,name,email,phone,plan,status,"funnelStep","lastActivityAt","createdAt","paymentStatus","paymentAmount","paidAt","pagbankCheckoutId","ownerId",version
+        select id,name,email,phone,plan,status,"funnelStep","lastActivityAt","createdAt","paymentStatus","paymentAmount","paidAt","pagbankCheckoutId","ownerId",version,
+        case when exists(select 1 from concloud."OpeningProcess" p where p."leadId"=concloud."OpeningLead".id) then 'OPERATION' when "paymentStatus"='PAID' then 'PAID' when status='DRAFT' then 'STARTED' when "pagbankCheckoutId" is not null then 'WAITING_PAYMENT' else 'REGISTERED' end as "commercialStage"
         from concloud."OpeningLead"
         where (${input.search}='' or name ilike ${search} or email ilike ${search} or (${cpfSearch}<>'' and cpf like ${`%${cpfSearch}%`}))
         and (${input.plan}='' or plan=${input.plan}) and (${input.status}='' or status=${input.status})
@@ -210,10 +213,86 @@ export async function internalOpening(request: Request, path: string[]) {
       if (path[2] === 'documents') {
         if (!staff.documents)
           throw new AppError('FORBIDDEN', 'Acesso aos documentos não autorizado.', 403);
+        if (path.length === 5 && path[4] === 'versions' && method === 'GET') {
+          const documentId = uuid.parse(path[3]);
+          const items =
+            await tx.$queryRaw`select v.id,v.filename,v."uploadedAt",(v."objectKey"=d."objectKey") as current,
+            coalesce((select jsonb_agg(jsonb_build_object('id',r.id,'decision',r.decision,'reason',r.reason,'createdAt',r."createdAt") order by r."createdAt" desc,r.id desc) from concloud."OpeningDocumentReview" r where r."versionId"=v.id),'[]'::jsonb) as reviews
+            from concloud."OpeningDocumentVersion" v join concloud."OpeningLeadDocument" d on d.id=v."documentId"
+            where v."documentId"=${documentId}::uuid and v."leadId"=${id}::uuid order by v."uploadedAt" desc,v.id desc limit 100`;
+          return { items };
+        }
+        if (
+          path.length === 7 &&
+          path[4] === 'versions' &&
+          path[6] === 'download' &&
+          method === 'POST'
+        ) {
+          const documentId = uuid.parse(path[3]),
+            versionId = uuid.parse(path[5]);
+          const [doc] = await tx.$queryRaw<
+            { objectKey: string; bucket: string }[]
+          >`select "objectKey",bucket from concloud."OpeningDocumentVersion" where id=${versionId}::uuid and "documentId"=${documentId}::uuid and "leadId"=${id}::uuid`;
+          if (!doc || doc.bucket !== bucket() || !doc.objectKey.startsWith(`opening-leads/${id}/`))
+            throw new AppError('NOT_FOUND', 'Versão não encontrada.', 404);
+          await audit(tx, actor, lead, 'document.version_download_authorized', {
+            documentId,
+            versionId,
+          });
+          return { url: await signedDownload(doc.objectKey) };
+        }
+        if (path.length === 5 && path[4] === 'reviews' && method === 'POST') {
+          const documentId = uuid.parse(path[3]);
+          const input = z
+            .object({
+              versionId: uuid,
+              expectedReviewId: uuid.nullable(),
+              decision: z.enum(['APPROVED', 'REJECTED']),
+              reason: z.string().trim().max(2000).default(''),
+            })
+            .strict()
+            .parse(await request.json());
+          if (input.decision === 'REJECTED' && input.reason.length < 5)
+            throw new AppError(
+              'REASON_REQUIRED',
+              'Informe o motivo da correção (mínimo 5 caracteres).',
+              422,
+            );
+          const current = await tx.$queryRaw<
+            { id: string }[]
+          >`select id from concloud."OpeningLeadDocument" where id=${documentId}::uuid and "openingLeadId"=${id}::uuid`;
+          if (!current[0]) throw new AppError('NOT_FOUND', 'Documento não encontrado.', 404);
+          const versions = await tx.$queryRaw<{ id: string; reviewId: string | null }[]>`
+            select v.id,r.id as "reviewId" from concloud."OpeningDocumentVersion" v
+            join concloud."OpeningLeadDocument" d on d.id=v."documentId" and d."objectKey"=v."objectKey"
+            left join lateral(select id from concloud."OpeningDocumentReview" where "versionId"=v.id order by "createdAt" desc,id desc limit 1) r on true
+            where d.id=${documentId}::uuid and v.id=${input.versionId}::uuid and v."partnersSnapshot"=${JSON.stringify(lead.partners)}::jsonb`;
+          if (!versions[0] || versions[0].reviewId !== input.expectedReviewId)
+            throw new AppError(
+              'CONFLICT',
+              'O documento, os sócios ou sua revisão mudaram. Atualize a ficha.',
+              409,
+            );
+          const [review] = await tx.$queryRaw<
+            { id: string }[]
+          >`insert into concloud."OpeningDocumentReview"("versionId","reviewerId",decision,reason) values(${input.versionId}::uuid,${actor.id}::uuid,${input.decision},${input.reason}) returning id`;
+          await audit(tx, actor, lead, 'document.reviewed', {
+            documentId,
+            versionId: input.versionId,
+            reviewId: review.id,
+            decision: input.decision,
+          });
+          return { ok: true };
+        }
         if (path.length === 3 && method === 'GET') {
           const items = await tx.$queryRaw<
             Record<string, unknown>[]
-          >`select id,kind,filename,mime,size,"uploadedAt" from concloud."OpeningLeadDocument" where "openingLeadId"=${id}::uuid order by kind`;
+          >`select d.id,d.kind,d.filename,d.mime,d.size,d."uploadedAt",v.id as "versionId",r.id as "reviewId",coalesce(r.decision,'RECEIVED') as decision,coalesce(r.reason,'') as reason,
+            (v."partnersSnapshot"=l.partners) as "matchesPartners"
+            from concloud."OpeningLeadDocument" d join concloud."OpeningLead" l on l.id=d."openingLeadId"
+            join concloud."OpeningDocumentVersion" v on v."documentId"=d.id and v."objectKey"=d."objectKey"
+            left join lateral(select id,decision,reason from concloud."OpeningDocumentReview" where "versionId"=v.id order by "createdAt" desc,id desc limit 1) r on true
+            where d."openingLeadId"=${id}::uuid order by d.kind`;
           return { items, submittedAt: lead.documentsSubmittedAt };
         }
         if (path.length === 5 && path[4] === 'download' && method === 'POST') {

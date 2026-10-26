@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ConCloud Internal Opening API
-  version: 1.0.0
+  version: 1.1.0
   description: Equipe ativa, login com senha (AAL1 ou AAL2) e escopo do escritório ConCloud. Respostas privadas sem cache.
 servers:
   - url: /api/internal/v1
@@ -100,7 +100,7 @@ paths:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
     get:
-      summary: Metadados dos documentos atuais, sem aprovação ou versões inventadas
+      summary: Documentos atuais, revisão vigente e vínculo da versão aos sócios
       responses:
         '200': { description: 'items (id, kind, filename, mime, size, uploadedAt), submittedAt' }
         '403': { description: Sem concessão documental }
@@ -113,6 +113,128 @@ paths:
       responses:
         '200': { description: url assinada por 60 segundos e expiresAt }
         '404': { description: Arquivo não encontrado ou fora do escopo }
+  /processes:
+    get:
+      summary: 'Quadro paginado: workflow e offset; items, nextOffset, workflows, returns'
+      responses:
+        '200': { description: Resultado autorizado e persistido }
+        '403': { description: Sem concessão }
+        '404': { description: Fora de escopo ou inexistente }
+        '409': { description: Versão concorrente }
+        '422': { description: Dados ou requisitos pendentes }
+    post:
+      summary: 'Encaminhamento idempotente: leadId e workflow MEI ou JUCESP'
+      responses:
+        '200': { description: Resultado autorizado e persistido }
+        '403': { description: Sem concessão }
+        '404': { description: Fora de escopo ou inexistente }
+        '409': { description: Versão concorrente }
+        '422': { description: Dados ou requisitos pendentes }
+  /processes/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      summary: 'Processo, etapas, tarefas, comprovantes e últimos 100 eventos'
+      responses:
+        '200': { description: Resultado autorizado e persistido }
+        '403': { description: Sem concessão }
+        '404': { description: Fora de escopo ou inexistente }
+        '409': { description: Versão concorrente }
+        '422': { description: Dados ou requisitos pendentes }
+  /processes/{id}/transitions:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      summary: 'Transição com targetStage, expectedVersion, situation, reason, checked, protocol e cnpj'
+      responses:
+        '200': { description: Resultado autorizado e persistido }
+        '403': { description: Sem concessão }
+        '404': { description: Fora de escopo ou inexistente }
+        '409': { description: Versão concorrente }
+        '422': { description: Dados ou requisitos pendentes }
+  /processes/{id}/tasks:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      summary: 'Tarefa com title e dueAt nullable; responsável do cadastro'
+      responses:
+        '200': { description: Resultado autorizado e persistido }
+        '403': { description: Sem concessão }
+        '404': { description: Fora de escopo ou inexistente }
+        '409': { description: Versão concorrente }
+        '422': { description: Dados ou requisitos pendentes }
+  /processes/{id}/tasks/{taskId}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: taskId, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      summary: 'Conclusão/reabertura com completed e expectedVersion'
+      responses:
+        '200': { description: Resultado autorizado e persistido }
+        '403': { description: Sem concessão }
+        '404': { description: Fora de escopo ou inexistente }
+        '409': { description: Versão concorrente }
+        '422': { description: Dados ou requisitos pendentes }
+  /processes/{id}/evidence:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      summary: 'Upload privado JSON com kind, filename, mime e data base64; máximo 2 MB decodificados'
+      responses:
+        '200': { description: Resultado autorizado e persistido }
+        '403': { description: Sem concessão }
+        '404': { description: Fora de escopo ou inexistente }
+        '409': { description: Versão concorrente }
+        '422': { description: Dados ou requisitos pendentes }
+  /processes/{id}/evidence/{evidenceId}/download:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: evidenceId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      summary: 'Download auditado do comprovante'
+      responses:
+        '200': { description: Resultado autorizado e persistido }
+        '403': { description: Sem concessão }
+        '404': { description: Fora de escopo ou inexistente }
+        '409': { description: Versão concorrente }
+        '422': { description: Dados ou requisitos pendentes }
+  /leads/{id}/documents/{documentId}/reviews:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: documentId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      summary: 'Revisão com versionId, expectedReviewId nullable, decision APPROVED ou REJECTED e reason'
+      responses:
+        '200': { description: Resultado autorizado e persistido }
+        '403': { description: Sem concessão }
+        '404': { description: Fora de escopo ou inexistente }
+        '409': { description: Versão concorrente }
+        '422': { description: Dados ou requisitos pendentes }
+  /leads/{id}/documents/{documentId}/versions:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: documentId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      summary: 'Até 100 versões e revisões do documento, sem objectKey'
+      responses:
+        '200': { description: Resultado autorizado e persistido }
+        '403': { description: Sem concessão }
+        '404': { description: Fora de escopo ou inexistente }
+        '409': { description: Versão concorrente }
+        '422': { description: Dados ou requisitos pendentes }
+  /leads/{id}/documents/{documentId}/versions/{versionId}/download:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: documentId, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: versionId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      summary: 'Download auditado da versão selecionada'
+      responses:
+        '200': { description: Resultado autorizado e persistido }
+        '403': { description: Sem concessão }
+        '404': { description: Fora de escopo ou inexistente }
+        '409': { description: Versão concorrente }
+        '422': { description: Dados ou requisitos pendentes }
 components:
   securitySchemes:
     operatorToken:
