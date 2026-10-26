@@ -20,13 +20,13 @@ Inspeção remota encontrou histórico em `supabase_migrations.schema_migrations
 
 A autoridade de arquivos continua `packages/database/migrations` neste repositório; o painel não possui migrations. Não executar Prisma deploy nesse remoto antes de baselining/reconciliação formal do histórico. Bases locais novas usam Prisma normalmente. Nenhuma migration do outro sistema foi reaplicada ou alterada.
 
-Após rollout: 4 leads e 12 referências documentais preservados, hashes de IDs e objectKeys inalterados, nenhum lead sem organização. Provisionamento idempotente do administrador confirmado está em `scripts/sql/bootstrap-opening-admin.sql`; usa identidade Auth existente e confirmada, sem criar senha/usuário ou enviar mensagem. MFA é exigido no primeiro acesso.
+Após rollout: 4 leads e 12 referências documentais preservados, hashes de IDs e objectKeys inalterados, nenhum lead sem organização. Provisionamento idempotente do administrador confirmado está em `scripts/sql/bootstrap-opening-admin.sql`; usa identidade Auth existente e confirmada, sem criar senha/usuário ou enviar mensagem. Login com e-mail e senha, sem exigir segundo fator (decisão do responsável em 26/10/2026).
 
 ## Verificação
 
-Build e TypeScript aprovados. Suite local: 36 testes aprovados e 13 ignorados por ausência de PostgreSQL nativo de teste configurado. Os novos testes de migrations/RLS usam PGlite com a cadeia completa, role concloud_runtime, duas organizações, clientes, AAL1/AAL2, revogação, concorrência de versão e preservação de arquivos legados. Testes de autenticação cobrem token inválido e claims de outra identidade. Não equivalem a login humano/MFA real.
+Build e TypeScript aprovados. Suite local: 36 testes aprovados e 13 ignorados por ausência de PostgreSQL nativo de teste configurado. Os novos testes de migrations/RLS usam PGlite com a cadeia completa, role concloud_runtime, duas organizações, clientes, AAL1/AAL2, revogação, concorrência de versão e preservação de arquivos legados. Testes de autenticação cobrem token inválido e claims de outra identidade. Não equivalem a login humano real.
 
-A conexão administrativa MCP não permite SET ROLE concloud_runtime; não foram ampliados privilégios para contornar isso. O teste direto dessa role no remoto permaneceu indisponível; RLS foi executada em banco isolado e a API publicada deve ser homologada com a sessão MFA do administrador.
+A conexão administrativa MCP não permite SET ROLE concloud_runtime; não foram ampliados privilégios para contornar isso. O teste direto dessa role no remoto permaneceu indisponível; RLS foi executada em banco isolado e a API publicada deve ser homologada com a sessão do administrador.
 
 ## Limites
 

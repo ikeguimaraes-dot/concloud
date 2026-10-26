@@ -55,7 +55,7 @@ beforeAll(async () => {
   ).rows[0].id;
 });
 afterAll(async () => db?.close());
-async function asUser<T>(id: string, fn: () => Promise<T>, aal = 'aal2') {
+async function asUser<T>(id: string, fn: () => Promise<T>, aal = 'aal1') {
   await db.exec('begin; set local role concloud_runtime;');
   await db.query("select set_config('app.user_id',$1,true),set_config('app.aal',$2,true)", [
     id,
@@ -78,7 +78,7 @@ it('persiste draft com cadeia inteira, inclusive MEI, sem inventar sócios', asy
   expect(rows.rows[0]).toEqual({ status: 'DRAFT', partners: [] });
   await db.query('update concloud."OpeningLead" set plan=\'mei\' where id=$1', [lead]);
 });
-it('admin AAL2 vê draft; cliente e AAL1 não', async () => {
+it('admin com senha vê draft; cliente e contexto sem autenticação não', async () => {
   expect(
     (await asUser(admin, () => db.query('select id from concloud."OpeningLead"'))).rows,
   ).toHaveLength(1);
@@ -86,7 +86,7 @@ it('admin AAL2 vê draft; cliente e AAL1 não', async () => {
     (await asUser(client, () => db.query('select id from concloud."OpeningLead"'))).rows,
   ).toHaveLength(0);
   expect(
-    (await asUser(admin, () => db.query('select id from concloud."OpeningLead"'), 'aal1')).rows,
+    (await asUser(admin, () => db.query('select id from concloud."OpeningLead"'), '')).rows,
   ).toHaveLength(0);
 });
 it('operador só vê atribuído e não altera pagamento; atribuição tem versão', async () => {

@@ -37,9 +37,9 @@ export async function internalActor(request: Request): Promise<Actor> {
   const claims = await auth.auth.getClaims(token);
   if (claims.error || claims.data?.claims.sub !== data.user.id)
     throw new AppError('UNAUTHORIZED', 'Sessão inválida.', 401);
-  if (claims.data.claims.aal !== 'aal2')
-    throw new AppError('MFA_REQUIRED', 'Confirme a autenticação em duas etapas.', 403);
-  return { id: data.user.id, email: data.user.email, aal: 'aal2' };
+  const aal = claims.data.claims.aal ?? 'aal1';
+  if (aal !== 'aal1' && aal !== 'aal2') throw new AppError('UNAUTHORIZED', 'Sessão inválida.', 401);
+  return { id: data.user.id, email: data.user.email, aal };
 }
 
 async function staffContext(tx: Tx, actor: Actor) {

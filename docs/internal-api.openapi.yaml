@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: ConCloud Internal Opening API
   version: 1.0.0
-  description: Equipe ativa, AAL2 e escopo do escritório ConCloud. Respostas privadas sem cache.
+  description: Equipe ativa, login com senha (AAL1 ou AAL2) e escopo do escritório ConCloud. Respostas privadas sem cache.
 servers:
   - url: /api/internal/v1
 security:
@@ -24,7 +24,7 @@ paths:
             office,
           }
         '401': { description: Token inválido }
-        '403': { description: MFA_REQUIRED ou equipe inativa/sem concessão }
+        '403': { description: Equipe inativa/sem concessão }
   /staff:
     get:
       summary: Responsáveis elegíveis visíveis ao administrador

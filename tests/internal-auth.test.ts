@@ -22,7 +22,7 @@ it('recusa token expirado ou inválido', async () => {
   auth.getUser.mockResolvedValue({ data: { user: null }, error: new Error('invalid') });
   await expect(internalActor(request())).rejects.toMatchObject({ status: 401 });
 });
-it('exige MFA mesmo se user_metadata afirma privilégios', async () => {
+it('aceita senha e ignora privilégios alegados em user_metadata', async () => {
   auth.getUser.mockResolvedValue({
     data: {
       user: {
@@ -33,7 +33,11 @@ it('exige MFA mesmo se user_metadata afirma privilégios', async () => {
     },
   });
   auth.getClaims.mockResolvedValue({ data: { claims: { sub: 'operator', aal: 'aal1' } } });
-  await expect(internalActor(request())).rejects.toMatchObject({ code: 'MFA_REQUIRED' });
+  expect(await internalActor(request())).toEqual({
+    id: 'operator',
+    email: 'test@example.invalid',
+    aal: 'aal1',
+  });
 });
 it('deriva ator de identidade validada e claims correspondentes', async () => {
   auth.getUser.mockResolvedValue({
