@@ -243,91 +243,120 @@ export default function Home() {
         <Building2 />
       </section>
 
-      <section className="plans-section" id="planos">
-        <div className="section-heading">
-          <span>PLANOS</span>
-          <h2>Uma solução para cada momento da sua empresa.</h2>
-          <p>A recomendação é feita depois de entendermos sua operação.</p>
+      <section className="plans-section" id="planos" aria-labelledby="plans-title">
+        <div className="section-heading pricing-heading">
+          <span className="pricing-eyebrow">PEQUENO NO PREÇO. GRANDE NO CUIDADO.</span>
+          <h2 id="plans-title">
+            Seu próximo passo.
+            <br />
+            <em>Por muito menos.</em>
+          </h2>
+          <p>
+            Da abertura do MEI à gestão da sua empresa.
+            <br />
+            Escolha seu plano e comece com a ConCloud.
+          </p>
+          <div className="pricing-billing">
+            <span /> Planos mensais · preços em reais
+          </div>
         </div>
         <div className="plan-grid">
-          <article>
-            <small>MEI</small>
-            <h3>Abertura de CNPJ - MEI</h3>
-            <p>Para quem quer abrir MEI, por R$ 39,90/mês.</p>
-            <ul>
-              <li>
-                <Check /> Abertura do seu CNPJ MEI
-              </li>
-              <li>
-                <Check /> Envio de documentos pela plataforma
-              </li>
-              <li>
-                <Check /> Acompanhamento da abertura
-              </li>
-            </ul>
-            <Link href="/abrir-empresa">
-              Abrir meu MEI <ArrowRight />
-            </Link>
-          </article>
-          <article>
-            <small>ESSENCIAL</small>
-            <h3>Para começar organizado</h3>
-            <p>Rotina contábil, documentos, guias e atendimento digital.</p>
-            <ul>
-              <li>
-                <Check /> Plataforma ConCloud
-              </li>
-              <li>
-                <Check /> Agenda de obrigações
-              </li>
-              <li>
-                <Check /> Atendimento da equipe
-              </li>
-            </ul>
-            <Link href="/abrir-empresa">
-              Solicitar análise <ArrowRight />
-            </Link>
-          </article>
-          <article className="featured">
-            <span>MAIS COMPLETO</span>
-            <small>GESTÃO</small>
-            <h3>Contabilidade e financeiro juntos</h3>
-            <p>Mais visibilidade para acompanhar a operação e tomar decisões.</p>
-            <ul>
-              <li>
-                <Check /> Tudo do Essencial
-              </li>
-              <li>
-                <Check /> Contas a pagar e receber
-              </li>
-              <li>
-                <Check /> Conciliação financeira
-              </li>
-            </ul>
-            <Link href="/abrir-empresa">
-              Solicitar análise <ArrowRight />
-            </Link>
-          </article>
-          <article>
-            <small>PRÓXIMO</small>
-            <h3>Acompanhamento dedicado</h3>
-            <p>Para empresas que precisam de uma rotina mais acompanhada.</p>
-            <ul>
-              <li>
-                <Check /> Tudo do Gestão
-              </li>
-              <li>
-                <Check /> Responsável de referência
-              </li>
-              <li>
-                <Check /> Revisões periódicas
-              </li>
-            </ul>
-            <Link href="/abrir-empresa">
-              Falar com especialista <ArrowRight />
-            </Link>
-          </article>
+          {[
+            {
+              id: 'mei',
+              name: 'MEI',
+              tagline: 'Seu negócio começa aqui.',
+              price: '39',
+              cents: ',90',
+              description: 'Abertura de CNPJ MEI com acompanhamento em cada etapa.',
+              features: [
+                'Abertura do seu CNPJ MEI',
+                'Envio de documentos online',
+                'Acompanhamento da abertura',
+              ],
+              cta: 'Quero abrir meu MEI',
+              badge: 'O MENOR PREÇO PARA COMEÇAR',
+            },
+            {
+              id: 'essencial',
+              name: 'Essencial',
+              tagline: 'O essencial, bem cuidado.',
+              price: '99',
+              cents: ',00',
+              description: 'Contabilidade e rotina organizada para você focar no negócio.',
+              features: ['Plataforma ConCloud', 'Agenda de obrigações', 'Atendimento da equipe'],
+              cta: 'Escolher Essencial',
+            },
+            {
+              id: 'gestao',
+              name: 'Gestão',
+              tagline: 'Mais controle. Mais clareza.',
+              price: '149',
+              cents: ',00',
+              description: 'Contabilidade e financeiro juntos, em uma só plataforma.',
+              features: [
+                'Tudo do plano Essencial',
+                'Contas a pagar e receber',
+                'Conciliação financeira',
+              ],
+              cta: 'Quero o plano Gestão',
+              badge: 'CONTABILIDADE + FINANCEIRO',
+            },
+            {
+              id: 'proximo',
+              name: 'Próximo',
+              tagline: 'A gente vai junto.',
+              price: '199',
+              cents: ',00',
+              description: 'Um acompanhamento mais dedicado para a sua empresa.',
+              features: [
+                'Tudo do plano Gestão',
+                'Responsável de referência',
+                'Revisões periódicas',
+              ],
+              cta: 'Escolher Próximo',
+            },
+          ].map((plan) => (
+            <article className={`pricing-card pricing-card-${plan.id}`} key={plan.id}>
+              <div className="pricing-ribbon">{plan.badge ?? ' '}</div>
+              <div className="pricing-card-body">
+                <h3>{plan.name}</h3>
+                <p className="pricing-tagline">{plan.tagline}</p>
+                <div
+                  className="pricing-amount"
+                  aria-label={`R$ ${plan.price}${plan.cents} por mês`}
+                >
+                  <span className="pricing-currency" aria-hidden="true">
+                    R$
+                  </span>
+                  <strong aria-hidden="true">{plan.price}</strong>
+                  <span className="pricing-decimals" aria-hidden="true">
+                    <b>{plan.cents}</b>
+                    <span>/mês</span>
+                  </span>
+                </div>
+                <p className="pricing-description">{plan.description}</p>
+                <Link className="pricing-button" href="/abrir-empresa">
+                  {plan.cta}
+                  <ArrowRight aria-hidden="true" />
+                </Link>
+                <div className="pricing-includes">SEU PLANO INCLUI</div>
+                <ul>
+                  {plan.features.map((feature) => (
+                    <li key={feature}>
+                      <Check aria-hidden="true" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </article>
+          ))}
         </div>
+        <p className="pricing-assurance">
+          <ShieldCheck aria-hidden="true" /> Contratação online <span>·</span> Pagamento seguro pelo
+          PagSeguro
+        </p>
       </section>
 
       <section className="why-section">
